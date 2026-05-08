@@ -1,0 +1,16 @@
+﻿{
+    "transfer": [
+        {
+            "id": "jt",
+            "name": "東海道線",
+            "name_en": "Tokaidō line",
+            "color": "#ff0000"
+        },
+        {
+            "id": "jk",
+            "name": "京浜東北線",
+            "name_en": "Keihin-tōhoku line",
+            "color": "#ff0000"
+        }
+    ]
+}
