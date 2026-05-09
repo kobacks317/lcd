@@ -3,6 +3,7 @@ let displayPhase = 0;
 let isPaused = false;
 let lastStationMessage = null;
 var message = null;
+var direction = 1;
 
 function getLetterClass(charCount) {
     if (charCount === 2) return 'letter-2';
@@ -91,6 +92,20 @@ function updateStationInfo(message) {
     document.documentElement.style.setProperty('--type-background', message.selectedType.background);
     document.documentElement.style.setProperty('--type-color', message.selectedType.color);
 
+    if (message.originIndex < message.terminalIndex) {
+        direction = 1;
+    } else {
+        direction = -1;
+    }
+
+    while (message.stationList[message.currentIndex][message.selectedType.id] === '') {
+        message.currentIndex += direction;
+        if (message.currentIndex < 0 || message.currentIndex >= message.stationList.length) {
+            message.currentIndex = 0;
+            break;
+        }
+    }
+
     // Update text content
     document.getElementById('type-jp').textContent = message.selectedType.name;
     document.getElementById('type-en').textContent = message.selectedType.name_en;
@@ -106,6 +121,20 @@ function updateStationInfo(message) {
     document.getElementById('sta-name-en').textContent = message.stationList[message.currentIndex].en;
     document.getElementById('sta-name-kana').textContent = message.stationList[message.currentIndex].kana;
     
+    switch (message.currentStatus) {
+        case 0:
+            document.getElementById('sta-pre-jp').textContent = 'つぎは';
+            document.getElementById('sta-pre-en').textContent = 'Next';
+            break;
+        case 1:
+            document.getElementById('sta-pre-jp').textContent = "まもなく";
+            document.getElementById('sta-pre-en').textContent = "Arriving at";
+            break;
+        default:
+            document.getElementById('sta-pre-jp').textContent = "ただいま";
+            document.getElementById('sta-pre-en').textContent = "Now stopping at";
+    }
+
     // classの更新は内容の更新後に行う
     document.getElementById('type-jp').className = 'type jp kana';
     document.getElementById('type-en').className = 'type en';

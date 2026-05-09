@@ -166,6 +166,10 @@ body {
     transform-origin: top;
 }
 
+.grey {
+    color: grey;
+}
+
 .dmc-line-l, .dmc-line-r {
     /* border: solid; */
     top: 360px;
@@ -181,6 +185,10 @@ body {
 
 .dmc-line-r {
     right: 0px;
+}
+
+.dmc-line-l.grey, .dmc-line-r.grey {
+    background: grey !important;
 }
 
 .dmc-numbering {
@@ -222,4 +230,26 @@ body {
     letter-spacing: -0.06em;
     text-indent: -0.04em;
     background: white;
+}
+
+.dmc-circle.grey {
+    width: 30px;
+    height: 30px;
+    top: 400px;
+}
+
+.dmc-circle.next {
+    background: yellow;
+    border: solid 5px white;
+}
+
+.dmc-circle.pass {
+    background: grey;
+    border-radius: unset;
+    clip-path: polygon(35% 10%, 55% 10%, 75% 50%, 55% 90%, 35% 90%, 55% 50%);
+}
+.dmc-circle.passed {
+    background: white;
+    border-radius: unset;
+    clip-path: polygon(35% 10%, 55% 10%, 75% 50%, 55% 90%, 35% 90%, 55% 50%);
 }

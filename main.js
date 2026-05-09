@@ -12,6 +12,12 @@ const STATUS_TEXT = {
 };
 let popupWindow = null;
 let stationList = [];
+let statusList = [
+    { id: '0', name: '走行中' },
+    { id: '1', name: '到着中' },
+    { id: '2', name: '停車中' },
+    { id: '3', name: '発車前' }
+];
 let stationState = {
     origin: null,
     terminal: null,
@@ -20,12 +26,15 @@ let stationState = {
 let originIndex = null;
 let terminalIndex = null;
 let currentIndex = null;
+let currentStatus = null;
 let configState = null;
 let selectedType = null;
 let startButton = null;
 let pauseButton = null;
 let prevStationButton = null;
 let nextStationButton = null;
+let prevStatusButton = null;
+let nextStatusButton = null;
 let typeSelect = null;
 let popupReady = false;
 let isPaused = false;
@@ -35,16 +44,20 @@ window.addEventListener('DOMContentLoaded', () => {
     const originSelect = $('originStation');
     const terminalSelect = $('terminalStation');
     const currentSelect = $('currentStation');
+    const statusSelect = $('currentStatus');
     typeSelect = $('trainType');
     startButton = $('startButton');
     pauseButton = $('pauseButton');
     prevStationButton = $('prevStationButton');
     nextStationButton = $('nextStationButton');
+    prevStatusButton = $('prevStatusButton');
+    nextStatusButton = $('nextStatusButton');
 
     configSelect.addEventListener('change', handleConfigFileChange);
     originSelect.addEventListener('change', handleStationSelectionChange);
     terminalSelect.addEventListener('change', handleStationSelectionChange);
     currentSelect.addEventListener('change', handleStationSelectionChange);
+    statusSelect.addEventListener('change', handleStationSelectionChange);
     typeSelect.addEventListener('change', handleTypeSelectionChange);
     startButton.addEventListener('click', handleStartButtonClick);
     if (pauseButton) {
@@ -55,6 +68,12 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     if (nextStationButton) {
         nextStationButton.addEventListener('click', handleNextStationClick);
+    }
+    if (prevStatusButton) {
+        prevStatusButton.addEventListener('click', handlePrevStatusClick);
+    }
+    if (nextStatusButton) {
+        nextStatusButton.addEventListener('click', handleNextStatusClick);
     }
 
     if (IS_FILE_PROTOCOL) {
@@ -230,6 +249,7 @@ function populateStationSelects(stations) {
     const originSelect = $('originStation');
     const terminalSelect = $('terminalStation');
     const currentSelect = $('currentStation');
+    const statusSelect = $('currentStatus');
     [originSelect, terminalSelect, currentSelect].forEach((select) => {
         select.innerHTML = '<option value="">-- なし --</option>';
     });
@@ -243,6 +263,16 @@ function populateStationSelects(stations) {
         return;
     }
 
+    if (originIndex == null) {
+        originIndex = 0;
+    }
+    if (terminalIndex == null) {
+        terminalIndex = stations.length - 1;
+    }
+    if (currentIndex == null) {
+        currentIndex = originIndex;
+    }
+
     stations.forEach((station, index) => {
         const label = [station.stanumber || station.staNo, station.jp || station.en].filter(Boolean).join(' ');
         const option = document.createElement('option');
@@ -250,17 +280,29 @@ function populateStationSelects(stations) {
         option.textContent = label || `駅 ${index + 1}`;
         originSelect.appendChild(option.cloneNode(true));
         terminalSelect.appendChild(option.cloneNode(true));
-        currentSelect.appendChild(option.cloneNode(true));
+        
+        if (index >= Math.min(originIndex, terminalIndex) && index <= Math.max(originIndex, terminalIndex)) {
+            currentSelect.appendChild(option.cloneNode(true));
+        }
     });
 
     originSelect.disabled = false;
     terminalSelect.disabled = false;
     currentSelect.disabled = false;
+    statusSelect.disabled = false;
     setPrevNextButtonsEnabled(true);
 
-    originSelect.value = '0';
-    terminalSelect.value = String(stations.length - 1);
-    currentSelect.value = '0';
+    originSelect.value = originIndex;
+    terminalSelect.value = terminalIndex;
+    if (currentIndex < Math.min(originIndex, terminalIndex) || currentIndex > Math.max(originIndex, terminalIndex)) {
+        currentIndex = originIndex;
+    }
+    currentSelect.value = currentIndex;
+
+    if (currentStatus == null) {
+        currentStatus = 2;
+    }
+    statusSelect.value = String(currentStatus);
 
     originIndex = 0;
     terminalIndex = stations.length - 1;
@@ -277,6 +319,12 @@ function setPrevNextButtonsEnabled(enabled) {
     }
     if (nextStationButton) {
         nextStationButton.disabled = !enabled;
+    }
+    if (prevStatusButton) {
+        prevStatusButton.disabled = !enabled;
+    }
+    if (nextStatusButton) {
+        nextStatusButton.disabled = !enabled;
     }
 }
 
@@ -298,11 +346,37 @@ function handleNextStationClick() {
     }
 }
 
+function handlePrevStatusClick() {
+    const currentStatus = $('currentStatus');
+    const currentIndex = Number(currentStatus.value);
+    if (currentIndex > 0) {
+        currentStatus.value = String(currentIndex - 1);
+        handleStationSelectionChange();
+    } else {
+        currentStatus.value = String(statusList.length - 1);
+        handlePrevStationClick();
+        handleStationSelectionChange();
+    }
+}
+
+function handleNextStatusClick() {
+    const currentStatus = $('currentStatus');
+    const currentIndex = Number(currentStatus.value);
+    if (currentIndex < statusList.length - 1) {
+        currentStatus.value = String(currentIndex + 1);
+        handleStationSelectionChange();
+    } else {
+        currentStatus.value = '0';
+        handleNextStationClick();
+        handleStationSelectionChange();
+    }
+}
 
 function handleStationSelectionChange() {
     originIndex = Number($('originStation').value);
     terminalIndex = Number($('terminalStation').value);
     currentIndex = Number($('currentStation').value);
+    currentStatus = Number($('currentStatus').value);
 
     stationState.origin = stationList[originIndex] || null;
     stationState.terminal = stationList[terminalIndex] || null;
@@ -310,6 +384,7 @@ function handleStationSelectionChange() {
 
     updateStationSelectionStatus();
     sendStationDataToFrames();
+    populateStationSelects(stationList);
 }
 
 function handleTypeSelectionChange() {
@@ -442,7 +517,8 @@ function sendStationDataToFrames() {
         stationList,
         originIndex,
         terminalIndex,
-        currentIndex
+        currentIndex,
+        currentStatus
     }, window.location.origin);
 }
 
