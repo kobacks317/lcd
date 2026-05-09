@@ -164,6 +164,7 @@ body {
     top: 30px;
     height: 325px;
     transform-origin: top;
+    align-items: center;
 }
 
 .grey {
