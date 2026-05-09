@@ -17,11 +17,18 @@ let stationState = {
     terminal: null,
     current: null
 };
+let originIndex = null;
+let terminalIndex = null;
+let currentIndex = null;
 let configState = null;
 let selectedType = null;
 let startButton = null;
+let pauseButton = null;
+let prevStationButton = null;
+let nextStationButton = null;
 let typeSelect = null;
 let popupReady = false;
+let isPaused = false;
 
 window.addEventListener('DOMContentLoaded', () => {
     const configSelect = $('configFile');
@@ -30,6 +37,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const currentSelect = $('currentStation');
     typeSelect = $('trainType');
     startButton = $('startButton');
+    pauseButton = $('pauseButton');
+    prevStationButton = $('prevStationButton');
+    nextStationButton = $('nextStationButton');
 
     configSelect.addEventListener('change', handleConfigFileChange);
     originSelect.addEventListener('change', handleStationSelectionChange);
@@ -37,6 +47,15 @@ window.addEventListener('DOMContentLoaded', () => {
     currentSelect.addEventListener('change', handleStationSelectionChange);
     typeSelect.addEventListener('change', handleTypeSelectionChange);
     startButton.addEventListener('click', handleStartButtonClick);
+    if (pauseButton) {
+        pauseButton.addEventListener('click', handlePauseButtonClick);
+    }
+    if (prevStationButton) {
+        prevStationButton.addEventListener('click', handlePrevStationClick);
+    }
+    if (nextStationButton) {
+        nextStationButton.addEventListener('click', handleNextStationClick);
+    }
 
     if (IS_FILE_PROTOCOL) {
         setStatus('file:// では fetch がブラウザにより制限されます。ローカル HTTP サーバーで index.html を配信してください（例: python -m http.server 8000）。', true);
@@ -45,6 +64,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     setStartButtonEnabled(false);
+    setPauseButtonEnabled(false);
     setStatus(STATUS_TEXT.idle, false);
     loadConfigList();
 });
@@ -131,9 +151,12 @@ function handleStartButtonClick() {
         return;
     }
     popupReady = false;
+    isPaused = false;
+    setPauseButtonLabel(isPaused);
     setStatus('ポップアップを開始します。', false);
     openPopupWindow(configState, configState.title || 'LCD Display');
     sendStationDataToFrames();
+    setPauseButtonEnabled(true);
 }
 
 function setStartButtonEnabled(enabled) {
@@ -141,6 +164,36 @@ function setStartButtonEnabled(enabled) {
         return;
     }
     startButton.disabled = !enabled;
+}
+
+function setPauseButtonEnabled(enabled) {
+    if (!pauseButton) {
+        return;
+    }
+    pauseButton.disabled = !enabled;
+}
+
+function setPauseButtonLabel(paused) {
+    if (!pauseButton) {
+        return;
+    }
+    pauseButton.textContent = paused ? '更新再開' : '更新停止';
+}
+
+function handlePauseButtonClick() {
+    isPaused = !isPaused;
+    setPauseButtonLabel(isPaused);
+    sendPauseCommand(isPaused);
+    updateStationSelectionStatus();
+}
+
+function sendPauseCommand(paused) {
+    if (!popupWindow || popupWindow.closed) {
+        setPauseButtonEnabled(false);
+        return;
+    }
+    const messageType = paused ? 'pauseUpdate' : 'resumeUpdate';
+    popupWindow.postMessage({ type: messageType }, window.location.origin);
 }
 
 async function loadStationData(path) {
@@ -185,6 +238,7 @@ function populateStationSelects(stations) {
         [originSelect, terminalSelect, currentSelect].forEach((select) => {
             select.disabled = true;
         });
+        setPrevNextButtonsEnabled(false);
         stationState = { origin: null, terminal: null, current: null };
         return;
     }
@@ -202,21 +256,53 @@ function populateStationSelects(stations) {
     originSelect.disabled = false;
     terminalSelect.disabled = false;
     currentSelect.disabled = false;
+    setPrevNextButtonsEnabled(true);
 
     originSelect.value = '0';
     terminalSelect.value = String(stations.length - 1);
     currentSelect.value = '0';
 
-    stationState.origin = stations[0];
-    stationState.terminal = stations[stations.length - 1];
-    stationState.current = stations[0];
+    originIndex = 0;
+    terminalIndex = stations.length - 1;
+    currentIndex = 0;
+    stationState.origin = stations[originIndex];
+    stationState.terminal = stations[terminalIndex];
+    stationState.current = stations[currentIndex];
     updateStationSelectionStatus();
 }
 
+function setPrevNextButtonsEnabled(enabled) {
+    if (prevStationButton) {
+        prevStationButton.disabled = !enabled;
+    }
+    if (nextStationButton) {
+        nextStationButton.disabled = !enabled;
+    }
+}
+
+function handlePrevStationClick() {
+    const currentSelect = $('currentStation');
+    const currentIndex = Number(currentSelect.value);
+    if (currentIndex > 0) {
+        currentSelect.value = String(currentIndex - 1);
+        handleStationSelectionChange();
+    }
+}
+
+function handleNextStationClick() {
+    const currentSelect = $('currentStation');
+    const currentIndex = Number(currentSelect.value);
+    if (currentIndex < stationList.length - 1) {
+        currentSelect.value = String(currentIndex + 1);
+        handleStationSelectionChange();
+    }
+}
+
+
 function handleStationSelectionChange() {
-    const originIndex = Number($('originStation').value);
-    const terminalIndex = Number($('terminalStation').value);
-    const currentIndex = Number($('currentStation').value);
+    originIndex = Number($('originStation').value);
+    terminalIndex = Number($('terminalStation').value);
+    currentIndex = Number($('currentStation').value);
 
     stationState.origin = stationList[originIndex] || null;
     stationState.terminal = stationList[terminalIndex] || null;
@@ -280,6 +366,7 @@ function renderConfig(config, fileName) {
             typeSelect.value = selectedType.id;
         }
     }
+    setPauseButtonEnabled(false);
 }
 
 function parseNumeric(value, fallback) {
@@ -323,22 +410,22 @@ function createFrame(id, src, height) {
         } catch (error) {
             // ignore cross-origin or unsupported cases
         }
-        sendStationDataToFrame(frame);
+        sendStationDataToFrames();
     };
     return frame;
 }
 
-function sendStationDataToFrame(frame) {
-    if (!frame.contentWindow || !stationState) {
-        return;
-    }
-    frame.contentWindow.postMessage({
-        type: 'stationUpdate',
-        stationState,
-        config: configState,
-        selectedType
-    }, window.location.origin);
-}
+// function sendStationDataToFrame(frame) {
+//     if (!frame.contentWindow || !stationState) {
+//         return;
+//     }
+//     frame.contentWindow.postMessage({
+//         type: 'stationUpdate',
+//         stationState,
+//         config: configState,
+//         selectedType
+//     }, window.location.origin);
+// }
 
 function sendStationDataToFrames() {
     if (!popupWindow || popupWindow.closed) {
@@ -351,7 +438,11 @@ function sendStationDataToFrames() {
         type: 'stationUpdate',
         stationState,
         config: configState,
-        selectedType
+        selectedType,
+        stationList,
+        originIndex,
+        terminalIndex,
+        currentIndex
     }, window.location.origin);
 }
 
@@ -421,6 +512,7 @@ function openPopupWindow(config, fileName) {
     window.addEventListener('resize', updateScale);
     updateScale();
     let lastStationUpdate = null;
+    let lastControlMessage = null;
     function forwardToFrames(message) {
         const frames = document.querySelectorAll('iframe');
         frames.forEach(function(frame) {
@@ -432,8 +524,12 @@ function openPopupWindow(config, fileName) {
     window.addEventListener('message', function(event) {
         if (event.origin !== window.location.origin) return;
         const message = event.data;
-        if (!message || message.type !== 'stationUpdate') return;
-        lastStationUpdate = message;
+        if (!message || !['stationUpdate', 'pauseUpdate', 'resumeUpdate'].includes(message.type)) return;
+        if (message.type === 'stationUpdate') {
+            lastStationUpdate = message;
+        } else {
+            lastControlMessage = message;
+        }
         forwardToFrames(message);
     });
     window.addEventListener('DOMContentLoaded', function() {
@@ -442,6 +538,9 @@ function openPopupWindow(config, fileName) {
             frame.addEventListener('load', function() {
                 if (lastStationUpdate && frame.contentWindow) {
                     frame.contentWindow.postMessage(lastStationUpdate, window.location.origin);
+                }
+                if (lastControlMessage && frame.contentWindow) {
+                    frame.contentWindow.postMessage(lastControlMessage, window.location.origin);
                 }
             });
         });

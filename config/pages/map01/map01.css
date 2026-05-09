@@ -13,6 +13,16 @@ body {
     box-sizing: border-box;
 }
 
+:root {
+    --config-color: #ff0000;
+    --type-background: #ffffff;
+    --type-color: #000000;
+    --jp-opacity: 1;
+    --en-opacity: 0;
+    --kana-opacity: 0;
+}
+
+
 #main, #info {
     opacity: 100%;
 }
@@ -127,150 +137,6 @@ body {
 
 
 
-
-#trainInfo {
-    width: 28%;
-    height: 100%;
-}
-
-#arrow {
-    width: 100%;
-    height: 100%;
-    left: 0px;
-    background-color: #ff0000;
-    clip-path: polygon(0 0, 90% 0%, 100% 50%, 90% 100%, 0 100%);
-}
-
-#type-box {
-    position: absolute;
-    background: white;
-    color: black;
-    top: 6%;
-    left: 4%;
-    width: 82%;
-    height: 38%;
-    border-radius: 8px;
-    border-color: black;
-    border-style: solid;
-}
-
-#type {
-    width: 100%;
-    height: 100%;
-    font-size: 100px;
-    font-weight: 800;
-    font-style: italic;
-    line-height: 130px;
-    text-align: left;
-    text-indent: 8px;
-    transform-origin: 0px;
-}
-
-#destination {
-    color: black;
-    top: 200px;
-    left: 40px;
-    /* width: 400px; */
-    height: 90px;
-    font-size: 80px;
-    line-height: 90px;
-    /* border: solid; */
-    transform-origin: left;
-    text-align: left;
-    font-weight: 600;
-}
-
-#yuki {
-    top: 285px;
-    left: 360px;
-    font-size: 55px;
-}
-
-#numbering-box {
-    left: 555px;
-    bottom: 20px;
-    width: 190px;
-    height: 190px;
-    border: solid;
-    text-align: -webkit-center;
-    border-radius: 25px;
-    display: flex;
-    justify-content: center;
-    text-align: center;
-    background: black;
-}
-
-#nummbering {
-    border-style: solid;
-    left: 10px;
-    bottom: 10px;
-    height: 170px;
-    width: 170px;
-    border-radius: 17px;
-    border-width: 20px;
-    border-color: #ff0000;
-    background: white;
-    display: flex;
-    justify-content: center;
-    text-align: center;
-}
-
-#line-code {
-    font-size: 55px;
-    font-weight: 600;
-    line-height: 56px;
-}
-
-#sta-number {
-    top: 50px;
-    font-size: 75px;
-    font-weight: 600;
-    line-height: 75px;
-}
-
-#status {
-    top: 13px;
-    left: 565px;
-    font-size: 60px;
-    font-weight: 500;
-    color: white;
-}
-
-#staNumber {
-    color: black;
-    top: 56%;
-    width: 100%;
-    font-size: 4vw;
-}
-
-
-#staField {
-    top: 110px;
-    height: 250px;
-    left: 790px;
-    width: 970px;
-    border: solid;
-}
-
-#staName {
-    color: white;
-    font-size: 240px;
-    line-height: 240px;
-    transform-origin: 0px;
-}
-
-
-
-#carNo {
-    position: absolute;
-    left: 95%;
-}
-#time {
-    position: absolute;
-    left: 80%;
-    
-}
-
 #detail-map {
     /* border: solid; */
     display: flex;
@@ -305,7 +171,7 @@ body {
     top: 360px;
     width: 50%;
     height: 113px;
-    background: red;
+    background: var(--config-color);
 }
 
 .dmc-line-l {
@@ -323,7 +189,7 @@ body {
     /* left: 53px; */
     width: 65px;
     height: 65px;
-    border-color: red;
+    border-color: var(--config-color);
     border-radius: 5px;
     border-width: 7px;
     display: flex;

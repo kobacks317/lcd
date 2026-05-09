@@ -1,13 +1,17 @@
 body {
     background-color: #202020;
-    width: 100%;
-    height: 100%;
+    text-align: center;
+    height: 370px;
+    width: 1920px;
 }
 
 :root {
     --config-color: #ff0000;
     --type-background: #ffffff;
     --type-color: #000000;
+    --jp-opacity: 1;
+    --en-opacity: 0;
+    --kana-opacity: 0;
 }
 
 * {
@@ -18,73 +22,209 @@ body {
     font-style: normal;
     white-space: nowrap;
     box-sizing: border-box;
-}
-
-#main, #info {
-    opacity: 100%;
+    color: white;
 }
 
 #main {
-    text-align: center;
+    width: 100%;
+    height: 100%;
+}
+
+
+.jp {
+    opacity: var(--jp-opacity);
+}
+
+.en {
+    opacity: var(--en-opacity);
+}
+
+.kana {
+    opacity: var(--kana-opacity);
+}
+
+.jp.kana {
+    opacity: calc(var(--jp-opacity) + var(--kana-opacity));;
+}
+
+
+#arrow {
+    background-color: var(--config-color);
+    width: 538px;
     height: 370px;
-    width: 1920px;
+    left: 0px;
+    top: 0px;
+    clip-path: polygon(0% 0%, 90% 0%, 100% 50%, 90% 100%, 0 100%);
 }
 
-.arrow {
-    fill: var(--config-color);
-}
-
-.type-box {
+#type-box {
+    position: absolute;
     background: var(--type-background);
+    color: black;
+    top: 22px;
+    left: 22px;
+    width: 440px;
+    height: 140px;
+    border-radius: 8px;
+    border-color: black;
+    border-style: solid;
 }
 
 .type {
+    /* type-box内 */
+    width: 100%;
+    height: 100%;
+    
+    left: -10px;
+    font-weight: 800;
     color: var(--type-color);
+    font-style: italic;
+    line-height: 130px;
+    text-align: center;
+    transform-origin: 0px;
+}
+
+.type.jp {
+    font-size: 100px;
+}
+
+.type.en {
+    font-size: 120px;
+}
+
+.destination {
+    color: black;
+    font-weight: 600;
+}
+
+.destination.name {
+    left: 40px;
+    font-size: 80px;
+    line-height: 90px;
+    transform-origin: left;
+    text-align: left;
+}
+
+.destination.name.jp {
+    top: 200px;
+}
+
+.destination.name.en {
+    top: 240px;
+}
+
+.destination.pre.jp {
+    top: 280px;
+    left: 350px;
+    font-size: 55px;
+}
+
+.destination.pre.en {
+    top: 180px;
+    left: 40px;
+    font-size: 55px;
 }
 
 .numbering {
     border-color: var(--config-color);
     color: #000000;
+    font-family: "Istok Web", sans-serif;
+    font-weight: 700;
 }
 
-.numbering-text {
-    color: #000000;
+#numbering-box {
+    left: 555px;
+    bottom: 20px;
+    width: 190px;
+    height: 190px;
+    border: solid 3px;
+    text-align: -webkit-center;
+    border-radius: 25px;
+    display: flex;
+    justify-content: center;
+    text-align: center;
+    background: black;
+    border-color: black;
 }
 
-.destination-en-text {
+#numbering-box.with-sta-code {
+    height: 240px;
+    border-color: white;
+}
+
+#numbering {
+    border-style: solid;
+    /* left: 10px; */
+    bottom: 7px;
+    height: 170px;
+    width: 170px;
+    border-radius: 17px;
+    border-width: 20px;
+    background: white;
+    display: flex;
+    justify-content: center;
     text-align: center;
 }
 
-.sta-name-en-text {
-    text-align: center;
+#sta-code {
+    color: white;
+    top: 0px;
+    font-size: 60px;
+    line-height: 65px;
 }
 
-.destination-jp-text,
-.sta-name-jp-text,
-.sta-name-kana-text {
-    text-align: left;
+#line-code {
+    top: 5px;
+    font-size: 60px;
+    line-height: 56px;
 }
 
-.status-jp,
-.status-en {
+#sta-number {
+    bottom: 0px;
+    font-size: 80px;
+    line-height: 65px;
+    letter-spacing: 5px;
+}
+
+
+.sta.pre {
     top: 13px;
     left: 565px;
     font-size: 60px;
     font-weight: 500;
     color: white;
-    margin: 0;
+}
+
+#sta-field {
+    top: 110px;
+    height: 250px;
+    left: 790px;
+    width: 970px;
 }
 
 
 
+.sta.name {
+    font-size: 240px;
+    line-height: 240px;
+    transform-origin: 0px;
+}
+
+.sta.name.en {
+    top: -15px
+}
+
+
+
+
 .letter-2 {
-    /* scale: 87% 100%; */
+    
     letter-spacing: 1em;
     text-indent: 0.5em;
 }
 
 .letter-3 {
-    /* scale: 87% 100%; */
+    
     letter-spacing: 0.5em;
 }
 
@@ -105,20 +245,20 @@ body {
 
 
 .letter-2-in-5 {
-    /* scale: 87% 100%; */
+    
     letter-spacing: 2em;
     text-indent: 0.5em;
 }
 
 .letter-3-in-5 {
-    /* scale: 87% 100%; */
+    
     letter-spacing: 0.5em;
     text-indent: 0.25em;
 }
 
 .letter-4-in-5 {
-    /* scale: 87% 100%; */
-    /* letter-spacing: -0.08em; */
+    
+    
     text-indent: 0.5em;
 }
 
@@ -132,326 +272,6 @@ body {
     letter-spacing: -0.12em;
 }
 
-.v-letter-2 {
-    /* scale: 87% 100%; */
-    letter-spacing: 2em;
-    /* text-indent: 0.5em; */
-}
+.no-letter-adjustment {
 
-.v-letter-3 {
-    /* scale: 87% 100%; */
-    letter-spacing: 0.5em;
-    /* text-indent: 0.5em; */
-}
-
-.v-letter-5 {
-    scale: 100% 90%;
-    letter-spacing: -0.1em;
-    /* text-indent: 0.5em; */
-}
-
-.v-letter-6 {
-    scale: 100% 75%;
-    letter-spacing: -0.1em;
-    /* text-indent: 0.5em; */
-}
-
-.v-letter-7 {
-    scale: 100% 66%;
-    letter-spacing: -0.12em;
-    /* text-indent: 0.5em; */
-}
-
-
-#bg, #bgimg {
-    top: 0px;
-    width: 1920px;
-    opacity: 50%;
-}
-
-
-
-
-
-
-#trainInfo {
-    width: 28%;
-    height: 100%;
-}
-
-#arrow {
-    width: 100%;
-    height: 100%;
-    left: 0px;
-    background-color: #ff0000;
-    clip-path: polygon(0 0, 90% 0%, 100% 50%, 90% 100%, 0 100%);
-}
-
-#type-box {
-    position: absolute;
-    background: white;
-    color: black;
-    top: 6%;
-    left: 4%;
-    width: 82%;
-    height: 38%;
-    border-radius: 8px;
-    border-color: black;
-    border-style: solid;
-}
-
-#type {
-    width: 100%;
-    height: 100%;
-    font-size: 100px;
-    font-weight: 800;
-    font-style: italic;
-    line-height: 130px;
-    text-align: left;
-    text-indent: 8px;
-    transform-origin: 0px;
-}
-
-#destination {
-    color: black;
-    top: 200px;
-    left: 40px;
-    /* width: 400px; */
-    height: 90px;
-    font-size: 80px;
-    line-height: 90px;
-    /* border: solid; */
-    transform-origin: left;
-    text-align: left;
-    font-weight: 600;
-}
-
-#destination-jp,
-#destination-en {
-    color: black;
-    top: 200px;
-    left: 40px;
-    height: 90px;
-    transform-origin: left;
-    text-align: left;
-    font-weight: 600;
-}
-
-#destination-jp-text,
-#destination-en-text {
-    color: black;
-    font-size: 80px;
-    line-height: 90px;
-    transform-origin: left;
-    font-weight: 600;
-    margin: 0;
-}
-
-#yuki {
-    top: 285px;
-    left: 360px;
-    font-size: 55px;
-}
-
-#numbering-box {
-    left: 555px;
-    bottom: 20px;
-    width: 190px;
-    height: 190px;
-    border: solid;
-    text-align: -webkit-center;
-    border-radius: 25px;
-    display: flex;
-    justify-content: center;
-    text-align: center;
-    background: black;
-}
-
-#nummbering {
-    border-style: solid;
-    left: 10px;
-    bottom: 10px;
-    height: 170px;
-    width: 170px;
-    border-radius: 17px;
-    border-width: 20px;
-    border-color: #ff0000;
-    background: white;
-    display: flex;
-    justify-content: center;
-    text-align: center;
-}
-
-#line-code {
-    font-size: 55px;
-    font-weight: 600;
-    line-height: 56px;
-}
-
-#sta-number {
-    top: 50px;
-    font-size: 75px;
-    font-weight: 600;
-    line-height: 75px;
-}
-
-#status {
-    top: 13px;
-    left: 565px;
-    font-size: 60px;
-    font-weight: 500;
-    color: white;
-}
-
-#status-jp,
-#status-en {
-    top: 13px;
-    left: 565px;
-    font-size: 60px;
-    font-weight: 500;
-    color: white;
-    margin: 0;
-}
-
-#staNumber {
-    color: black;
-    top: 56%;
-    width: 100%;
-    font-size: 4vw;
-}
-
-
-#staField {
-    top: 110px;
-    height: 250px;
-    left: 790px;
-    width: 970px;
-    border: solid;
-}
-
-#staName {
-    color: white;
-    font-size: 240px;
-    line-height: 240px;
-    transform-origin: 0px;
-}
-
-#staName-jp,
-#staName-en,
-#staName-kana {
-    color: white;
-    /* top: 110px; */
-    height: 250px;
-    /* left: 790px; */
-    width: 970px;
-    border: solid;
-}
-
-#staName-jp-text,
-#staName-en-text,
-#staName-kana-text {
-    color: white;
-    font-size: 240px;
-    line-height: 240px;
-    transform-origin: 0px;
-    margin: 0;
-}
-
-
-
-#carNo {
-    position: absolute;
-    left: 95%;
-}
-#time {
-    position: absolute;
-    left: 80%;
-    
-}
-
-#detail-map {
-    /* border: solid; */
-    display: flex;
-    justify-content: left;
-    left: 100px;
-    height: 730px;
-    width: 1660px;
-}
-
-
-.dmc {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    text-align: center;
-    /* border: solid; */
-    width: 12.5%;
-    height: 100%;
-}
-
-.dmc-sta-name {
-    /* border: solid; */
-    writing-mode: vertical-rl;
-    font-size: 77px;
-    top: 30px;
-    height: 325px;
-    transform-origin: top;
-}
-
-.dmc-line-l, .dmc-line-r {
-    /* border: solid; */
-    top: 360px;
-    width: 50%;
-    height: 113px;
-    background: red;
-}
-
-.dmc-line-l {
-    left: 0px;
-    /* background: grey; */
-}
-
-.dmc-line-r {
-    right: 0px;
-}
-
-.dmc-numbering {
-    border: solid;
-    top: 480px;
-    /* left: 53px; */
-    width: 65px;
-    height: 65px;
-    border-color: red;
-    border-radius: 5px;
-    border-width: 7px;
-    display: flex;
-    justify-content: center;
-    text-align: center;
-}
-
-.dmc-numbering-line-code {
-    font-size: 22px;
-    line-height: 25px;
-    font-weight: 700;
-}
-
-.dmc-numbering-sta-number {
-    top: 20px;
-    font-size: 28px;
-    line-height: 30px;
-    font-weight: 700;
-}
-
-.dmc-circle {
-    top: 368px;
-    width: 95px;
-    height: 95px;
-    border-radius: 50%;
-    /* border: solid; */
-    font-family: "Public Sans", sans-serif;
-    font-size: 75px;
-    font-weight: 700;
-    letter-spacing: -0.06em;
-    text-indent: -0.04em;
-    background: white;
 }

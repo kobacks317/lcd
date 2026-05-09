@@ -8,48 +8,42 @@
         <link rel="stylesheet" href="./main01.css">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@100..900&family=M+PLUS+1p:wght@100;300;400;500;700;800;900&family=Noto+Sans+JP:wght@100..900&family=Public+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@100..900&family=M+PLUS+1p:wght@100;300;400;500;700;800;900&family=Noto+Sans+JP:wght@100..900&family=Public+Sans:ital,wght@0,100..900;1,100..900&display=swap&family=Istok+Web:ital,wght@0,400;0,700;1,400;1,700" rel="stylesheet">
     </head>
 
     <body>
         <div id="main">
-            <div id="trainInfo">
-                <svg id="arrow" class="arrow"></svg>
-                <div id="type-box" class="type-box">
-                    <p id="type" class="type letter-4">各駅停車</p>
-                </div>
-                <p id="origin" class="letter-4"></p>
-                
-                <div id="destination-jp" style="display: none;">
-                    <p id="destination-jp-text" class="destination-jp-text letter-7-in-5">八王子みなみ野</p>
-                    <p id="yuki-jp" style="position: absolute; top: 285px; left: 360px; font-size: 55px;">ゆき</p>
-                </div>
-                <div id="destination-en" style="display: none; position: relative;">
-                    <p id="destination-en-text" class="destination-en-text letter-7-in-5">Hachioji-Minamino</p>
-                    <p id="yuki-en" style="position: absolute; top: 20px; left: 20px; font-size: 40px;">for</p>
-                </div>
-            </div>
+            <!-- 種別・行先 -->
+            <svg id="arrow" class="arrow"></svg>
 
-            <div id="numbering-box">
-                <div id="nummbering" class="numbering">
-                    <p id="line-code">JN</p>
-                    <p id="sta-number" class="numbering-text">21</p>
+            <div id="type-box" class="type-box">
+                <p id="type-jp" class="type jp kana letter-4">各駅停車</p>
+                <p id="type-en" class="type en">Local</p>
+            </div>
+            
+            <p id="destination-jp" class="destination name jp kana letter-7-in-5">八王子みなみ野</p>
+            <p id="destination-en" class="destination name en letter-7-in-5">Hachioji-Minamino</p>
+            
+            <p id="destination-pre-jp" class="destination pre jp kana">ゆき</p>
+            <p id="destination-pre-en" class="destination pre en">for</p>
+            
+            <!-- 次駅ナンバリング -->
+            <div id="numbering-box" class="with-sta-code">
+                <p id="sta-code" class="numbering">MKG</p>
+                <div id="numbering" class="numbering">
+                    <p id="line-code" class="numbering">JN</p>
+                    <p id="sta-number" class="numbering">21</p>
                 </div>
             </div>
             
-            <p id="status-jp" class="status-jp" style="display: none;">次は</p>
-            <p id="status-en" class="status-en" style="display: none;">Next</p>
+            <!-- 次駅名 -->
+            <p id="sta-pre-jp" class="sta pre kana jp">次は</p>
+            <p id="sta-pre-en" class="sta pre en">Next</p>
             
-            <div id="staField">
-                <div id="staName-jp" style="display: none;">
-                    <p id="staName-jp-text" class="sta-name-jp-text letter-6">葛西臨海公園</p>
-                </div>
-                <div id="staName-en" style="display: none;">
-                    <p id="staName-en-text" class="sta-name-en-text letter-6">Kasai-Rinkai-Park</p>
-                </div>
-                <div id="staName-kana" style="display: none;">
-                    <p id="staName-kana-text" class="sta-name-kana-text letter-6">かさいりんかいこうえん</p>
-                </div>
+            <div id="sta-field">
+                <p id="sta-name-jp" class="sta name jp letter-6">葛西臨海公園</p>
+                <p id="sta-name-en" class="sta name en letter-6">Kasai-Rinkai-Park</p>
+                <p id="sta-name-kana" class="sta name kana letter-6">かさいりんかいこうえん</p>
             </div>
 
             <p id="carNo"></p>

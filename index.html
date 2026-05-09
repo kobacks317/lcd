@@ -50,6 +50,24 @@
                 gap: 0.75rem;
                 align-items: center;
             }
+            .station-arrow-buttons {
+                display: flex;
+                gap: 0.5rem;
+            }
+            .station-arrow-buttons button {
+                padding: 0.5rem 0.6rem;
+                border: 1px solid #cbd5e1;
+                border-radius: 8px;
+                background: #ffffff;
+                cursor: pointer;
+                transition: background-color 0.2s ease;
+                min-width: 40px;
+                font-weight: bold;
+            }
+            .station-arrow-buttons button:disabled {
+                opacity: 0.55;
+                cursor: not-allowed;
+            }
             .control-row label {
                 font-weight: 700;
             }
@@ -58,7 +76,8 @@
             #terminalStation,
             #trainType,
             #currentStation,
-            #startButton {
+            #startButton,
+            #pauseButton {
                 padding: 0.5rem 0.6rem;
                 border: 1px solid #cbd5e1;
                 border-radius: 8px;
@@ -149,9 +168,14 @@
                     <select id="currentStation" disabled>
                         <option value="">-- なし --</option>
                     </select>
+                    <div class="station-arrow-buttons">
+                        <button id="prevStationButton" disabled>←</button>
+                        <button id="nextStationButton" disabled>→</button>
+                    </div>
                 </div>
                 <div class="control-row">
                     <button id="startButton" disabled>開始</button>
+                    <button id="pauseButton" disabled>更新停止</button>
                 </div>
                 <div id="status">config フォルダー内の JSON ファイルを選択してください。</div>
             </section>
