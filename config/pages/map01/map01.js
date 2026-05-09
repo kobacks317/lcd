@@ -18,18 +18,17 @@ function updateStationInfo(message) {
         direction = -1;
         stationIndexes = Array.from({ length: message.stationList.length }, (_, i) => message.stationList.length -1 - i);
     }
-
-    if (stationIndexes.indexOf(message.currentIndex) == 0) {
-        dmcStationsIndexes[0] = stationIndexes[0];
-    } else if (stationIndexes.indexOf(message.currentIndex) > stationIndexes.length - dmcIds.length) {
-        dmcStationsIndexes[0] = stationIndexes[stationIndexes.length - dmcIds.length];
+    
+    if (message.currentStatus <= 1) {
+        dmcStationsIndexes[0] = stationIndexes[stationIndexes.indexOf(message.currentIndex) - 1];
     } else {
-        if (message.currentStatus <= 1) {
-            dmcStationsIndexes[0] = stationIndexes[stationIndexes.indexOf(message.currentIndex) - 1];
-        } else {
-            dmcStationsIndexes[0] = stationIndexes[stationIndexes.indexOf(message.currentIndex)];
-        }
+        dmcStationsIndexes[0] = stationIndexes[stationIndexes.indexOf(message.currentIndex)];
     }
+
+    if (stationIndexes.indexOf(dmcStationsIndexes[0])+dmcIds.length > stationIndexes.indexOf(message.terminalIndex)) {
+        dmcStationsIndexes[0] = stationIndexes[stationIndexes.indexOf(message.terminalIndex) - (dmcIds.length - 1)];
+    }
+
 
     for (let i = 1; i < dmcIds.length; i++) {
         dmcStationsIndexes[i] = stationIndexes[stationIndexes.indexOf(dmcStationsIndexes[i - 1]) + 1];

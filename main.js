@@ -304,9 +304,6 @@ function populateStationSelects(stations) {
     }
     statusSelect.value = String(currentStatus);
 
-    originIndex = 0;
-    terminalIndex = stations.length - 1;
-    currentIndex = 0;
     stationState.origin = stations[originIndex];
     stationState.terminal = stations[terminalIndex];
     stationState.current = stations[currentIndex];
@@ -328,11 +325,14 @@ function setPrevNextButtonsEnabled(enabled) {
     }
 }
 
+
+
 function handlePrevStationClick() {
     const currentSelect = $('currentStation');
     const currentIndex = Number(currentSelect.value);
-    if (currentIndex > 0) {
-        currentSelect.value = String(currentIndex - 1);
+    const direction = originIndex < terminalIndex ? 1 : -1;
+    if (currentIndex*direction > originIndex*direction) {
+        currentSelect.value = String(currentIndex - direction);
         handleStationSelectionChange();
     }
 }
@@ -340,37 +340,49 @@ function handlePrevStationClick() {
 function handleNextStationClick() {
     const currentSelect = $('currentStation');
     const currentIndex = Number(currentSelect.value);
-    if (currentIndex < stationList.length - 1) {
-        currentSelect.value = String(currentIndex + 1);
+    const direction = originIndex < terminalIndex ? 1 : -1;
+    if (currentIndex*direction < terminalIndex*direction) {
+        currentSelect.value = String(currentIndex + direction);
         handleStationSelectionChange();
     }
 }
 
 function handlePrevStatusClick() {
-    const currentStatus = $('currentStatus');
-    const currentIndex = Number(currentStatus.value);
-    if (currentIndex > 0) {
-        currentStatus.value = String(currentIndex - 1);
-        handleStationSelectionChange();
-    } else {
-        currentStatus.value = String(statusList.length - 1);
-        handlePrevStationClick();
-        handleStationSelectionChange();
+    const statusSelect = $('currentStatus');
+    const statusIndex = Number(statusSelect.value);
+    const direction = originIndex < terminalIndex ? 1 : -1;
+    if (!(currentIndex*direction <= originIndex*direction && statusIndex <= 2)) {
+        if (stationList[currentIndex][selectedType.id] == '') {
+            statusSelect.value = String(0);
+            handlePrevStationClick();
+        } else if (statusIndex > 0) {
+            statusSelect.value = String(statusIndex - 1);
+            handleStationSelectionChange();
+        } else {
+            statusSelect.value = String(statusList.length - 1);
+            handlePrevStationClick();
+        }
     }
 }
 
 function handleNextStatusClick() {
-    const currentStatus = $('currentStatus');
-    const currentIndex = Number(currentStatus.value);
-    if (currentIndex < statusList.length - 1) {
-        currentStatus.value = String(currentIndex + 1);
-        handleStationSelectionChange();
-    } else {
-        currentStatus.value = '0';
-        handleNextStationClick();
-        handleStationSelectionChange();
+    const statusSelect = $('currentStatus');
+    const statusIndex = Number(statusSelect.value);
+    const direction = originIndex < terminalIndex ? 1 : -1;
+    if (!(currentIndex*direction >= terminalIndex*direction && statusIndex >= 2)) {
+        if (stationList[currentIndex][selectedType.id] == '') {
+            statusSelect.value = String(0);
+            handleNextStationClick();
+        } else if (statusIndex < statusList.length - 1) {
+            statusSelect.value = String(statusIndex + 1);
+            handleStationSelectionChange();
+        } else {
+            statusSelect.value = String(0);
+            handleNextStationClick();
+        }
     }
 }
+
 
 function handleStationSelectionChange() {
     originIndex = Number($('originStation').value);
@@ -404,6 +416,12 @@ function updateStationSelectionStatus() {
     const currentName = stationState.current?.jp || stationState.current?.en || 'なし';
     const typeName = selectedType?.name || selectedType?.name_en || 'なし';
     setStatus(`種別: ${typeName} / 始発: ${originName} / 終着: ${terminalName} / 現在: ${currentName}`, false);
+    console.log('Station selection updated:', {
+        originIndex,
+        terminalIndex,
+        currentIndex,
+        currentStatus
+    });
 }
 
 function populateTypeSelect(types) {

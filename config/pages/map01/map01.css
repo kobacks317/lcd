@@ -14,7 +14,7 @@ body {
 }
 
 :root {
-    --config-color: #ff0000;
+    --config-color: rgb(175, 175, 0);
     --type-background: #ffffff;
     --type-color: #000000;
     --jp-opacity: 1;
@@ -238,6 +238,12 @@ body {
     top: 400px;
 }
 
+.dmc-circle.now {
+    width: 50px;
+    height: 50px;
+    top: 393px;
+}
+
 .dmc-circle.next {
     background: yellow;
     border: solid 5px white;
@@ -252,4 +258,38 @@ body {
     background: white;
     border-radius: unset;
     clip-path: polygon(35% 10%, 55% 10%, 75% 50%, 55% 90%, 35% 90%, 55% 50%);
+}
+
+.marker {
+    visibility: hidden;
+}
+
+.marker.running, .marker.stopping {
+    visibility: visible;
+}
+
+.marker.border {
+    width: 100%;
+    height: 140px;
+    top: 347px;
+    left: 0px;
+    background: white;
+}
+
+.marker.main {
+    width: calc(100% - 20px);
+    height: calc(100% - 20px);
+    top: 10px;
+    left: calc(10px * 0.8);
+    background: red;
+}
+
+
+
+.marker.running {
+    clip-path: polygon(0% 0%, 80% 0%, 90% 50%, 80% 100%, 0 100%);;
+}
+
+.marker.stopping {
+    clip-path: polygon(0% 0%, 70% 0%, 80% 50%, 70% 100%, 0 100%);
 }
