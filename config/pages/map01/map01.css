@@ -164,7 +164,10 @@ body {
     top: 30px;
     height: 325px;
     transform-origin: top;
-    align-items: center;
+    position: absolute;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
 }
 
 .grey {
