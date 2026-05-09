@@ -159,6 +159,7 @@ body {
 
 .dmc-sta-name {
     /* border: solid; */
+    -webkit-writing-mode: vertical-rl;
     writing-mode: vertical-rl;
     font-size: 77px;
     top: 30px;
