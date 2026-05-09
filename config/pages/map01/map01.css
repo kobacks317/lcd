@@ -14,7 +14,7 @@ body {
 }
 
 :root {
-    --config-color: rgb(175, 175, 0);
+    --config-color: rgb(212, 212, 47);
     --type-background: #ffffff;
     --type-color: #000000;
     --jp-opacity: 1;
@@ -260,36 +260,42 @@ body {
     clip-path: polygon(35% 10%, 55% 10%, 75% 50%, 55% 90%, 35% 90%, 55% 50%);
 }
 
-.marker {
+.marker-border, .marker-main {
     visibility: hidden;
 }
 
-.marker.running, .marker.stopping {
-    visibility: visible;
-}
 
-.marker.border {
-    width: 100%;
+
+.marker-border {
+    width: 200px;
     height: 140px;
     top: 347px;
     left: 0px;
     background: white;
 }
 
-.marker.main {
+.marker-main {
     width: calc(100% - 20px);
     height: calc(100% - 20px);
     top: 10px;
-    left: calc(10px * 0.8);
+    left: 10px;
     background: red;
 }
 
-
-
-.marker.running {
-    clip-path: polygon(0% 0%, 80% 0%, 90% 50%, 80% 100%, 0 100%);;
+.marker-border.running {
+    left: -50px;
+    width: 110px
+}
+.marker-main.running {
+    left: 13px
 }
 
-.marker.stopping {
-    clip-path: polygon(0% 0%, 70% 0%, 80% 50%, 70% 100%, 0 100%);
+.marker-main.running, .marker-border.running {
+    visibility: visible;
+    clip-path: polygon(0% 0%, 60% 0%, 100% 50%, 60% 100%, 0% 100%, 40% 50%);
+}
+
+.marker-main.stopping, .marker-border.stopping {
+    visibility: visible;
+    clip-path: polygon(0% 0%, 80% 0%, 100% 50%, 80% 100%, 0% 100%);
 }

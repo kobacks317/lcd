@@ -71,6 +71,15 @@ function updateStationInfo(message) {
     for (let i = 0; i < dmcIds.length; i++) {
         let station = message.stationList[dmcStationsIndexes[i]];
         station.status = dmcStationsStatuses[i];
+        if (dmcStationsIndexes[i] === message.currentIndex) {
+            if (message.currentStatus <= 1) {
+                station.marker = 'running';
+            } else {
+                station.marker = 'stopping';
+            }
+        } else {
+            station.marker = null;
+        }
         updateDMC(document.getElementById(dmcIds[i]), station);
     }
 }
@@ -116,7 +125,7 @@ function updateDMC(el, station) {
         el.getElementsByClassName('dmc-sta-name')[0].classList.add('grey');
     } else if (station.status === 'current') {
         el.getElementsByClassName('dmc-line-l')[0].classList.add('grey');
-        el.getElementsByClassName('dmc-circle')[0].classList.add('grey');
+        el.getElementsByClassName('dmc-circle')[0].classList.add('now');
     } else if (station.status === 'next') {
         el.getElementsByClassName('dmc-circle')[0].classList.add('next');
     } else if (station.status === 'pass') {
@@ -124,6 +133,17 @@ function updateDMC(el, station) {
         el.getElementsByClassName('dmc-sta-name')[0].classList.add('grey');
     }
     el.getElementsByClassName('dmc-circle')[0].textContent = "";
+
+    if (station.marker === 'running') {
+        el.getElementsByClassName('marker-border')[0].className = 'marker-border running';
+        el.getElementsByClassName('marker-main')[0].className = 'marker-main running';
+    } else if (station.marker === 'stopping') {
+        el.getElementsByClassName('marker-border')[0].className = 'marker-border stopping';
+        el.getElementsByClassName('marker-main')[0].className = 'marker-main stopping';
+    } else {
+        el.getElementsByClassName('marker-border')[0].className = 'marker-border';
+        el.getElementsByClassName('marker-main')[0].className = 'marker-main';
+    }
 }
 
 window.addEventListener('message', (event) => {
