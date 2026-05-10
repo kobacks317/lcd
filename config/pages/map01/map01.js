@@ -66,11 +66,38 @@ function updateStationInfo(message) {
         dmcStationsStatuses[dmcStationsStatuses.indexOf('stop')] = 'next';
     }
 
+    // 所要時間計算
+    let lastTime;
+    let lastStopIdx;
+    if (message.currentStatus >= 2) {
+        lastStopIdx = message.currentIndex;
+    } else {
+        lastStopIdx = message.currentIndex - direction;
+    }
+    while (message.stationList[lastStopIdx][message.selectedType.id] == '') {
+        lastStopIdx -= direction;
+        if (lastStopIdx < 0 || lastStopIdx >= message.stationList.length) {
+            break;
+        }
+    }
+    lastTime = message.stationList[lastStopIdx][message.selectedType.id];
+
     console.log('Updating DMCs with station indexes:', dmcStationsIndexes, dmcStationsStatuses);
 
     for (let i = 0; i < dmcIds.length; i++) {
         let station = message.stationList[dmcStationsIndexes[i]];
+        // 通過駅・所要時間設定
         station.status = dmcStationsStatuses[i];
+        if (station.status === 'next' || station.status === 'stop') {
+            if (direction > 0) {
+                station.time = String(Number(station[message.selectedType.id]) - Number(lastTime));
+            } else {
+                station.time = String(Number(lastTime) - Number(station[message.selectedType.id]));
+            }
+        } else {
+            station.time = null;
+        }
+        // 現在地マーカ設定
         if (dmcStationsIndexes[i] === message.currentIndex) {
             if (message.currentStatus <= 1) {
                 station.marker = 'running';
@@ -132,7 +159,8 @@ function updateDMC(el, station) {
         el.getElementsByClassName('dmc-circle')[0].classList.add('pass');
         el.getElementsByClassName('dmc-sta-name')[0].classList.add('grey');
     }
-    el.getElementsByClassName('dmc-circle')[0].textContent = "";
+
+    el.getElementsByClassName('dmc-circle')[0].textContent = station.time;
 
     if (station.marker === 'running') {
         el.getElementsByClassName('marker-border')[0].className = 'marker-border running';
