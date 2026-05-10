@@ -1,7 +1,7 @@
 let displayTimer = null;
 let displayPhase = 0;
 let isPaused = false;
-let lastStationMessage = null;
+let intervalMs = 3000;
 var message = null;
 var direction = 1;
 
@@ -223,14 +223,8 @@ function updateStationInfo(message) {
     }
 
 
-    const intervalMs = Number(message.config?.interval) > 0 ? Number(message.config?.interval) : 3000;
-    if (displayTimer) {
-        clearInterval(displayTimer);
-        displayTimer = null;
-    }
-    if (!isPaused) {
-        startDisplayTimer(intervalMs);
-    }
+    intervalMs = Number(message.config?.interval) > 0 ? Number(message.config?.interval) : intervalMs;
+    setPauseState(isPaused);
 }
 
 function startDisplayTimer(intervalMs) {
@@ -252,8 +246,7 @@ function setPauseState(paused) {
     isPaused = paused;
     if (paused) {
         stopDisplayTimer();
-    } else if (displayPhases.length > 1 && lastStationMessage) {
-        const intervalMs = Number(lastStationMessage.config?.interval) > 0 ? Number(lastStationMessage.config?.interval) : 3000;
+    } else {
         startDisplayTimer(intervalMs);
     }
 }

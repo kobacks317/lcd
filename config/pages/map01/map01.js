@@ -1,5 +1,9 @@
 var message = null;
 var direction = 1;
+let displayTimer = null;
+let displayPhase = 0;
+let isPaused = false;
+let intervalMs = 3000*4;
 
 function updateStationInfo(message) {
     // Update CSS variables
@@ -82,8 +86,6 @@ function updateStationInfo(message) {
     }
     lastTime = message.stationList[lastStopIdx][message.selectedType.id];
 
-    console.log('Updating DMCs with station indexes:', dmcStationsIndexes, dmcStationsStatuses);
-
     for (let i = 0; i < dmcIds.length; i++) {
         let station = message.stationList[dmcStationsIndexes[i]];
         // 通過駅・所要時間設定
@@ -109,10 +111,9 @@ function updateStationInfo(message) {
         }
         updateDMC(document.getElementById(dmcIds[i]), station);
     }
-}
 
-function setPauseState(isPaused) {
-    console.log(`Pause state updated: ${isPaused}`);
+    intervalMs = Number(message.config?.interval) > 0 ? Number(message.config?.interval*4) : intervalMs;
+    setPauseState(isPaused);
 }
 
 
@@ -127,14 +128,49 @@ function getLetterClassV(charCount) {
 }
 
 function updateDMC(el, station) {
-    el.getElementsByClassName('dmc-sta-name')[0].textContent = station.jp;
+    el.getElementsByClassName('dmc-sta-name jp')[0].textContent = station.jp;
+    el.getElementsByClassName('dmc-sta-name en')[0].textContent = station.en;
     el.getElementsByClassName('dmc-numbering-line-code')[0].textContent = station.linecode;
     el.getElementsByClassName('dmc-numbering-sta-number')[0].textContent = station.stanumber.padStart(2, '0');
     
-    el.getElementsByClassName('dmc-sta-name')[0].className = 'dmc-sta-name';
+    el.getElementsByClassName('dmc-sta-name en')[0].style.letterSpacing = 'unset';
+    el.getElementsByClassName('dmc-sta-name en')[0].style.transform = 'unset';
+
+    el.getElementsByClassName('dmc-sta-name jp')[0].className = 'dmc-sta-name jp';
+    el.getElementsByClassName('dmc-sta-name en')[0].className = 'dmc-sta-name en';
+
+    // 駅名の文字数に応じたクラスを追加
     if (station.jp.length <= 7) {
-        el.getElementsByClassName('dmc-sta-name')[0].classList.add(getLetterClassV(station.jp.length));
+        el.getElementsByClassName('dmc-sta-name jp')[0].classList.add(getLetterClassV(station.jp.length));
     }
+    var sw = el.getElementsByClassName('dmc-sta-name en')[0].scrollWidth;
+    var tw = 340;
+    var lc = station.en.length;
+    if (sw <= tw) {
+        // 文字が収まっている場合は何もしない
+    } else {
+        if (station.en.includes('-') && sw > 470) {
+            el.getElementsByClassName('dmc-sta-name en')[0].textContent = station.en.replace('-', '-\n');
+            el.getElementsByClassName('dmc-sta-name en')[0].classList.add('two-row');
+            sw = el.getElementsByClassName('dmc-sta-name en')[0].scrollWidth;
+            let rows = el.getElementsByClassName('dmc-sta-name en')[0].textContent.split('\n');
+            lc = Math.max(rows[0].length, rows[1].length);
+            sw = el.getElementsByClassName('dmc-sta-name en')[0].scrollWidth;
+        }
+        if (sw > tw) {
+            var ls = (sw-tw)/(lc-1);
+            if (ls <= 5) {
+                el.getElementsByClassName('dmc-sta-name en')[0].style.letterSpacing = -ls + 'px';
+            } else {
+                el.getElementsByClassName('dmc-sta-name en')[0].style.letterSpacing = '-5px';
+                sw = el.getElementsByClassName('dmc-sta-name en')[0].scrollWidth;
+                sx = tw/sw;
+                el.getElementsByClassName('dmc-sta-name en')[0].style.transform = `scaleX(${sx})`;
+            }
+        }
+    }
+
+    console.log(el.getElementsByClassName('dmc-sta-name en')[0].scrollWidth);
 
     el.getElementsByClassName('dmc-line-l')[0].className = 'dmc-line-l';
     el.getElementsByClassName('dmc-line-r')[0].className = 'dmc-line-r';
@@ -145,11 +181,13 @@ function updateDMC(el, station) {
         el.getElementsByClassName('dmc-line-r')[0].classList.add('grey');
         el.getElementsByClassName('dmc-circle')[0].classList.add('grey');
         el.getElementsByClassName('dmc-sta-name')[0].classList.add('grey');
+        el.getElementsByClassName('dmc-sta-name')[1].classList.add('grey');
     } else if (station.status === 'passed') {
         el.getElementsByClassName('dmc-line-l')[0].classList.add('grey');
         el.getElementsByClassName('dmc-line-r')[0].classList.add('grey');
         el.getElementsByClassName('dmc-circle')[0].classList.add('passed');
         el.getElementsByClassName('dmc-sta-name')[0].classList.add('grey');
+        el.getElementsByClassName('dmc-sta-name')[1].classList.add('grey');
     } else if (station.status === 'current') {
         el.getElementsByClassName('dmc-line-l')[0].classList.add('grey');
         el.getElementsByClassName('dmc-circle')[0].classList.add('now');
@@ -158,6 +196,7 @@ function updateDMC(el, station) {
     } else if (station.status === 'pass') {
         el.getElementsByClassName('dmc-circle')[0].classList.add('pass');
         el.getElementsByClassName('dmc-sta-name')[0].classList.add('grey');
+        el.getElementsByClassName('dmc-sta-name')[1].classList.add('grey');
     }
 
     el.getElementsByClassName('dmc-circle')[0].textContent = station.time;
@@ -173,6 +212,44 @@ function updateDMC(el, station) {
         el.getElementsByClassName('marker-main')[0].className = 'marker-main';
     }
 }
+
+function showPhase(displayPhase) {
+    if (displayPhase == 0) {
+        document.documentElement.style.setProperty('--jp-opacity', '1');
+        document.documentElement.style.setProperty('--en-opacity', '0');
+    } else if (displayPhase == 1) {
+        document.documentElement.style.setProperty('--jp-opacity', '0');
+        document.documentElement.style.setProperty('--en-opacity', '1');
+    }
+}
+
+
+
+function startDisplayTimer(intervalMs) {
+    stopDisplayTimer();
+    displayTimer = setInterval(() => {
+        displayPhase = (displayPhase + 1) % 2; // 0: jp, 1: en
+        showPhase(displayPhase);
+    }, intervalMs);
+}
+
+function stopDisplayTimer() {
+    if (displayTimer) {
+        clearInterval(displayTimer);
+        displayTimer = null;
+    }
+}
+
+function setPauseState(paused) {
+    isPaused = paused;
+    if (paused) {
+        stopDisplayTimer();
+    } else {
+        startDisplayTimer(intervalMs);
+    }
+}
+
+
 
 window.addEventListener('message', (event) => {
     console.log('Received message:', event.data);

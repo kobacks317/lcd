@@ -1,0 +1,19 @@
+﻿staNo,stacode,linecode,stanumber,jp,en,kana,local,rapid,exp,transfer
+1,TYO,JE,1,東京,Tōkyō,とうきょう,0,0,0,jt.ju.jk.jy.jc.jo.js.sh
+2,,JE,2,八丁堀,Hatchōbori,はっちょうぼり,1,1,1,h
+3,,JE,3,越中島,Etchūjima,えっちゅうじま,2,,,
+4,,JE,4,潮見,Shiomi,しおみ,3,,,
+5,,JE,5,新木場,Shin-Kiba,しんきば,4,2,2,y.r
+6,,JE,6,葛西臨海公園,Kasai-Rinkai Park,かさいりんかいこうえん,5,,,
+7,,JE,7,舞浜,Maihama,まいはま,6,3,,
+8,,JE,8,新浦安,Shin-Urayasu,しんうらやす,7,4,,
+9,,JE,9,市川塩浜,Ichikawa-shiohama,いちかわしおはま,8,,,
+10,,JE,10,二俣新町,Futamata-shinmachi,ふたまたしんまち,9,,,
+11,,JE,11,南船橋,Minami-Funabashi,みなみふなばし,10,5,,
+12,,JE,12,新習志野,Shin-Narashino,しんならしの,11,,,
+13,,JE,13,幕張豊砂,Makuhari-Toyosuna,まくはりとよすな,12,,,
+14,,JE,14,海浜幕張,Kaihimmakuhari,かいひんまくはり,13,6,,
+15,,JE,15,検見川浜,Kemigawahama,けみがわはま,14,7,,
+16,,JE,16,稲毛海岸,Inagekaigan,いなげかいがん,15,8,,
+17,,JE,17,千葉みなと,Chibaminato,ちばみなと,16,9,,ks
+18,,JE,18,蘇我,Soga,そが,17,10,3,vf

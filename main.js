@@ -35,6 +35,7 @@ let prevStationButton = null;
 let nextStationButton = null;
 let prevStatusButton = null;
 let nextStatusButton = null;
+let reverseButton = null;
 let typeSelect = null;
 let popupReady = false;
 let isPaused = false;
@@ -52,6 +53,7 @@ window.addEventListener('DOMContentLoaded', () => {
     nextStationButton = $('nextStationButton');
     prevStatusButton = $('prevStatusButton');
     nextStatusButton = $('nextStatusButton');
+    reverseButton = $('reverseButton');
 
     configSelect.addEventListener('change', handleConfigFileChange);
     originSelect.addEventListener('change', handleStationSelectionChange);
@@ -74,6 +76,9 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     if (nextStatusButton) {
         nextStatusButton.addEventListener('click', handleNextStatusClick);
+    }
+    if (reverseButton) {
+        reverseButton.addEventListener('click', handleReverseClick);
     }
 
     if (IS_FILE_PROTOCOL) {
@@ -323,6 +328,9 @@ function setPrevNextButtonsEnabled(enabled) {
     if (nextStatusButton) {
         nextStatusButton.disabled = !enabled;
     }
+    if (reverseButton) {
+        reverseButton.disabled = !enabled;
+    }
 }
 
 
@@ -381,6 +389,20 @@ function handleNextStatusClick() {
             handleNextStationClick();
         }
     }
+}
+
+function handleReverseClick() {
+    const originSelect = $('originStation');
+    const terminalSelect = $('terminalStation');
+    const currentSelect = $('currentStation');
+    const statusSelect = $('currentStatus');
+    let origin = originSelect.value;
+    let terminal = terminalSelect.value;
+    originSelect.value = terminal;
+    terminalSelect.value = origin;
+    currentSelect.value = terminal;
+    statusSelect.value = '2'; 
+    handleStationSelectionChange();
 }
 
 

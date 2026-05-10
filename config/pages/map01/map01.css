@@ -19,8 +19,16 @@ body {
     --type-color: #000000;
     --jp-opacity: 1;
     --en-opacity: 0;
-    --kana-opacity: 0;
 }
+
+.jp {
+    opacity: var(--jp-opacity);
+}
+
+.en {
+    opacity: var(--en-opacity);
+}
+
 
 
 #main, #info {
@@ -157,19 +165,41 @@ body {
     height: 100%;
 }
 
-.dmc-sta-name {
-    /* border: solid; */
+.vertical-rl-container {
     -webkit-writing-mode: vertical-rl;
     writing-mode: vertical-rl;
+    display: flex;
+    align-items: center;
+}
+
+.dmc-sta-name.jp {
+    /* border: solid; */
     font-size: 77px;
     top: 30px;
     height: 325px;
     transform-origin: top;
-    position: absolute;
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
-    width: 114.5px;
+}
+
+.dmc-sta-name.en {
+    /* border: solid; */
+    font-size: 69px;
+    top: 330px;
+    height: 80px;
+    transform-origin: left top;
+    left: 67px;
+    rotate: -64deg;
+    line-height: 60px;
+    text-align: left;
+    letter-spacing: -0.03em;
+    font-weight: 550;
+}
+
+.dmc-sta-name.en.two-row {
+    left: 25px;
+    height: 150px;
+    text-indent: -0.5em;
+    padding-left: 0.5em;
+    white-space: pre;
 }
 
 .grey {
@@ -238,13 +268,13 @@ body {
     background: white;
 }
 
-.dmc-circle.grey {
+/* .dmc-circle.grey {
     width: 30px;
     height: 30px;
     top: 400px;
-}
+} */
 
-.dmc-circle.now {
+.dmc-circle.now, .dmc-circle.grey {
     width: 50px;
     height: 50px;
     top: 393px;
@@ -258,12 +288,13 @@ body {
 .dmc-circle.pass {
     background: grey;
     border-radius: unset;
-    clip-path: polygon(35% 10%, 55% 10%, 75% 50%, 55% 90%, 35% 90%, 55% 50%);
+    clip-path: polygon(35% 10%, 45% 10%, 75% 50%, 45% 90%, 35% 90%, 65% 50%);
 }
 .dmc-circle.passed {
     background: white;
     border-radius: unset;
-    clip-path: polygon(35% 10%, 55% 10%, 75% 50%, 55% 90%, 35% 90%, 55% 50%);
+    clip-path: polygon(35% 10%, 45% 10%, 75% 50%, 45% 90%, 35% 90%, 65% 50%);
+    /* clip-path: polygon(35% 10%, 55% 10%, 75% 50%, 55% 90%, 35% 90%, 55% 50%); */
 }
 
 .marker-border, .marker-main {
@@ -284,16 +315,17 @@ body {
     width: calc(100% - 20px);
     height: calc(100% - 20px);
     top: 10px;
-    left: 10px;
+    left: 9px;
     background: red;
 }
 
 .marker-border.running {
-    left: -50px;
-    width: 110px
+    left: -70px;
+    width: 130px;
 }
 .marker-main.running {
-    left: 13px
+    width: calc(100% - 25px);
+    left: 16.5px
 }
 
 .marker-main.running, .marker-border.running {

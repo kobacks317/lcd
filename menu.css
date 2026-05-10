@@ -40,11 +40,11 @@
                 gap: 0.75rem;
                 align-items: center;
             }
-            .station-arrow-buttons, .status-arrow-buttons {
+            .station-arrow-buttons, .status-arrow-buttons, .reverse-button {
                 display: flex;
                 gap: 0.5rem;
             }
-            .station-arrow-buttons button, .status-arrow-buttons button {
+            .station-arrow-buttons button, .status-arrow-buttons button, .reverse-button button  {
                 padding: 0.5rem 0.6rem;
                 border: 1px solid #cbd5e1;
                 border-radius: 8px;
@@ -54,7 +54,7 @@
                 min-width: 40px;
                 font-weight: bold;
             }
-            .station-arrow-buttons button:disabled, .status-arrow-buttons button:disabled {
+            .station-arrow-buttons button:disabled, .status-arrow-buttons button:disabled, .reverse-button button:disabled {
                 opacity: 0.55;
                 cursor: not-allowed;
             }
