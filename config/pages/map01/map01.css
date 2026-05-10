@@ -118,6 +118,12 @@ body {
     /* text-indent: 0.5em; */
 }
 
+.v-letter-4 {
+    /* scale: 87% 100%; */
+    letter-spacing: 0.02em;
+    text-indent: -0.17em;
+}
+
 .v-letter-5 {
     scale: 100% 90%;
     letter-spacing: -0.1em;
@@ -166,7 +172,7 @@ body {
 }
 
 .dmc-sta-name.jp {
-    border: solid;
+    /* border: solid; */
     -webkit-writing-mode: vertical-rl;
     writing-mode: vertical-rl;
     font-size: 77px;

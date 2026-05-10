@@ -120,6 +120,7 @@ function updateStationInfo(message) {
 function getLetterClassV(charCount) {
     if (charCount === 2) return 'v-letter-2';
     if (charCount === 3) return 'v-letter-3';
+    if (charCount === 4) return 'v-letter-4';
     if (charCount === 5) return 'v-letter-5';
     if (charCount === 6) return 'v-letter-6';
     if (charCount === 7) return 'v-letter-7';
