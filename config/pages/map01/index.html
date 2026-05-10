@@ -19,12 +19,23 @@
 
         <div id="info">
             <div id="detail-map">
+                <svg width="0" height="0" style="position:absolute;">
+                    <defs>
+                        <!-- 0〜1 の範囲が 0%〜100% に対応します -->
+                        <clipPath id="wave-right" clipPathUnits="objectBoundingBox">
+                            <path d="M 0,0 
+                                    L 0.9,0 
+                                    C 0.6, 0.4, 1.2, 0.6, 0.9, 1 
+                                    L 0,1 
+                                    Z" />
+                    </defs>
+                </svg>
                 <div id="dmc-01" class="dmc">
                     <div class="dmc-sta-name jp v-letter-2 grey">立川</div>
                     <div class="dmc-sta-name en grey">Tachikawa</div>
                     
-                    <div class="dmc-line-l grey"></div>
-                    <div class="dmc-line-r grey"></div>
+                    <div class="dmc-line left grey terminal"></div>
+                    <div class="dmc-line right grey"></div>
                     <div class="marker-border">
                         <div class="marker-main"></div>
                     </div>
@@ -39,8 +50,8 @@
                     <div class="dmc-sta-name jp v-letter-3">西国立</div>
                     <div class="dmc-sta-name en two-row">Nishi-<br>Kunitachi</div>
                     
-                    <div class="dmc-line-l grey"></div>
-                    <div class="dmc-line-r"></div>
+                    <div class="dmc-line left grey"></div>
+                    <div class="dmc-line right"></div>
                     <div class="marker-border stopping">
                         <div class="marker-main stopping"></div>
                     </div>
@@ -55,8 +66,8 @@
                     <div class="dmc-sta-name jp v-letter-7">八王子みなみ野</div>
                     <div class="dmc-sta-name en two-row">Hachioji-<br>Minamino</div>
                     
-                    <div class="dmc-line-l"></div>
-                    <div class="dmc-line-r"></div>
+                    <div class="dmc-line left"></div>
+                    <div class="dmc-line right continue"></div>
                     <div class="marker-border">
                         <div class="marker-main"></div>
                     </div>
@@ -67,12 +78,12 @@
                     <div class="dmc-circle">3</div>
                     <div class="dmc-transfer"></div>
                 </div>
-                <div id="dmc-04" class="dmc">
+                <div id="dmc-04" class="dmc blank">
                     <div class="dmc-sta-name jp v-letter-6">葛西臨海公園</div>
                     <div class="dmc-sta-name en two-row">Kasai-<br>Rinkai Park</div>
                     
-                    <div class="dmc-line-l"></div>
-                    <div class="dmc-line-r grey"></div>
+                    <div class="dmc-line left"></div>
+                    <div class="dmc-line right grey"></div>
                     <div class="marker-border">
                         <div class="marker-main"></div>
                     </div>
@@ -87,8 +98,8 @@
                     <div class="dmc-sta-name jp v-letter-5 grey">武蔵溝ノ口</div>
                     <div class="dmc-sta-name en two-row grey">Musashi-<br>Mizonokuchi</div>
                     
-                    <div class="dmc-line-l grey"></div>
-                    <div class="dmc-line-r grey"></div>
+                    <div class="dmc-line left grey"></div>
+                    <div class="dmc-line right grey"></div>
                     <div class="marker-border">
                         <div class="marker-main"></div>
                     </div>
@@ -103,8 +114,8 @@
                     <div class="dmc-sta-name jp v-letter-4">分倍河原</div>
                     <div class="dmc-sta-name en">Bubaigawara</div>
 
-                    <div class="dmc-line-l"></div>
-                    <div class="dmc-line-r"></div>
+                    <div class="dmc-line left"></div>
+                    <div class="dmc-line right"></div>
                     <div class="marker-border running">
                         <div class="marker-main running"></div>
                     </div>
@@ -119,8 +130,8 @@
                     <div class="dmc-sta-name jp v-letter-4 grey">府中本町</div>
                     <div class="dmc-sta-name en two-row grey">Fuchu-<br>hommachi</div>
 
-                    <div class="dmc-line-l"></div>
-                    <div class="dmc-line-r"></div>
+                    <div class="dmc-line left"></div>
+                    <div class="dmc-line right omit"></div>
                     <div class="marker-border">
                         <div class="marker-main"></div>
                     </div>
@@ -135,8 +146,8 @@
                     <div class="dmc-sta-name jp v-letter-3">南多摩</div>
                     <div class="dmc-sta-name en">Minami-Tama</div>
 
-                    <div class="dmc-line-l"></div>
-                    <div class="dmc-line-r"></div>
+                    <div class="dmc-line left omit"></div>
+                    <div class="dmc-line right end"></div>
                     <div class="marker-border">
                         <div class="marker-main"></div>
                     </div>

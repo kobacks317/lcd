@@ -23,24 +23,51 @@ function updateStationInfo(message) {
         stationIndexes = Array.from({ length: message.stationList.length }, (_, i) => message.stationList.length -1 - i);
     }
     
+    // 1駅目を仮設定
     if (message.currentStatus <= 1) {
         dmcStationsIndexes[0] = stationIndexes[stationIndexes.indexOf(message.currentIndex) - 1];
     } else {
         dmcStationsIndexes[0] = stationIndexes[stationIndexes.indexOf(message.currentIndex)];
     }
 
-    if (stationIndexes.indexOf(dmcStationsIndexes[0])+dmcIds.length > stationIndexes.indexOf(message.terminalIndex)) {
-        dmcStationsIndexes[0] = stationIndexes[stationIndexes.indexOf(message.terminalIndex) - (dmcIds.length - 1)];
+    // 8駅目の判定し1駅目を修正
+    if (stationIndexes.indexOf(dmcStationsIndexes[0])+dmcIds.length> stationIndexes.indexOf(message.terminalIndex)) {
+        // 8駅目が終点以降の場合、終点-7駅目を1駅目候補とする
+        let newIdx0 = stationIndexes.indexOf(message.terminalIndex) - (dmcIds.length - 1);
+        if (stationIndexes.indexOf(newIdx0) >= stationIndexes.indexOf(message.originIndex)) {
+            // 1駅目候補が始発以降であれば採用
+            dmcStationsIndexes[0] = stationIndexes[newIdx0];
+        } else {
+            // 1駅目候補が始発以前であれば、始発駅を1駅目とする
+            dmcStationsIndexes[0] = message.originIndex;
+        }
     }
 
 
     for (let i = 1; i < dmcIds.length; i++) {
-        dmcStationsIndexes[i] = stationIndexes[stationIndexes.indexOf(dmcStationsIndexes[i - 1]) + 1];
+        let idx = -1;
+        let lastIdx = dmcStationsIndexes[i - 1];
+        if (lastIdx >= 0) { 
+            let si_idx = stationIndexes.indexOf(lastIdx) + 1;
+            if (si_idx >= 0 && si_idx < stationIndexes.length) {
+                // stationList範囲内
+                idx = stationIndexes[si_idx];
+                if (idx*direction < message.originIndex*direction || idx*direction > message.terminalIndex*direction) {
+                    // 始発以降、終点以前でない
+                    idx = -1;
+                } else {
+                    // 問題なし
+                }
+            } // elseはstationList外
+        } // elseは前駅がすでに-1
+        dmcStationsIndexes[i] = idx;
     }
+
+    console.log(dmcStationsIndexes, dmcStationsStatuses);
 
     for (let i = 0; i < dmcStationsIndexes.length; i++) {
         let dmcStaIdx = dmcStationsIndexes[i];
-        if (stationIndexes.indexOf(dmcStaIdx) < stationIndexes.indexOf(message.originIndex) || stationIndexes.indexOf(dmcStaIdx) > stationIndexes.indexOf(message.terminalIndex)) {
+        if (dmcStaIdx < 0 || stationIndexes.indexOf(dmcStaIdx) < stationIndexes.indexOf(message.originIndex) || stationIndexes.indexOf(dmcStaIdx) > stationIndexes.indexOf(message.terminalIndex)) {
             dmcStationsStatuses[i] = 'greyed';
         } else if (stationIndexes.indexOf(dmcStaIdx) < stationIndexes.indexOf(message.currentIndex)) {
             if (message.stationList[dmcStaIdx][message.selectedType.id] == '') {
@@ -61,7 +88,6 @@ function updateStationInfo(message) {
                 dmcStationsStatuses[i] = 'stop';
             }
         }
-
     }
 
     // currentが通過駅の場合
@@ -87,29 +113,36 @@ function updateStationInfo(message) {
     lastTime = message.stationList[lastStopIdx][message.selectedType.id];
 
     for (let i = 0; i < dmcIds.length; i++) {
-        let station = message.stationList[dmcStationsIndexes[i]];
-        // 通過駅・所要時間設定
-        station.status = dmcStationsStatuses[i];
-        if (station.status === 'next' || station.status === 'stop') {
-            if (direction > 0) {
-                station.time = String(Number(station[message.selectedType.id]) - Number(lastTime));
-            } else {
-                station.time = String(Number(lastTime) - Number(station[message.selectedType.id]));
-            }
+        if (dmcStationsIndexes[i] < 0) {
+            updateDMC(document.getElementById(dmcIds[i]), null);
         } else {
-            station.time = null;
-        }
-        // 現在地マーカ設定
-        if (dmcStationsIndexes[i] === message.currentIndex) {
-            if (message.currentStatus <= 1) {
-                station.marker = 'running';
+            let station = message.stationList[dmcStationsIndexes[i]];
+            // 通過駅・所要時間設定
+            station.status = dmcStationsStatuses[i];
+            if (station.status === 'next' || station.status === 'stop') {
+                if (direction > 0) {
+                    station.time = String(Number(station[message.selectedType.id]) - Number(lastTime));
+                } else {
+                    station.time = String(Number(lastTime) - Number(station[message.selectedType.id]));
+                }
             } else {
-                station.marker = 'stopping';
+                station.time = null;
             }
-        } else {
-            station.marker = null;
+            // 現在地マーカ設定
+            if (dmcStationsIndexes[i] === message.currentIndex) {
+                if (message.currentStatus <= 1) {
+                    station.marker = 'running';
+                } else {
+                    station.marker = 'stopping';
+                }
+            } else {
+                station.marker = null;
+            }
+
+            // ライン形状を設定
+
+            updateDMC(document.getElementById(dmcIds[i]), station);
         }
-        updateDMC(document.getElementById(dmcIds[i]), station);
     }
 
     intervalMs = Number(message.config?.interval) > 0 ? Number(message.config?.interval*4) : intervalMs;
@@ -129,18 +162,27 @@ function getLetterClassV(charCount) {
 }
 
 function updateDMC(el, station) {
+    el.getElementsByClassName('dmc-sta-name en')[0].style.letterSpacing = 'unset';
+    el.getElementsByClassName('dmc-sta-name en')[0].style.transform = 'unset';
+    el.getElementsByClassName('dmc-sta-name jp')[0].className = 'dmc-sta-name jp';
+    el.getElementsByClassName('dmc-sta-name en')[0].className = 'dmc-sta-name en';
+    el.getElementsByClassName('dmc-line left')[0].className = 'dmc-line left';
+    el.getElementsByClassName('dmc-line right')[0].className = 'dmc-line right';
+    el.getElementsByClassName('dmc-circle')[0].className = 'dmc-circle';
+    el.getElementsByClassName('marker-border')[0].className = 'marker-border';
+    el.getElementsByClassName('marker-main')[0].className = 'marker-main';
+
+    if (station == null) {
+        el.className = 'dmc blank';
+        return;
+    }
+    el.className = 'dmc';
     el.getElementsByClassName('dmc-sta-name jp')[0].textContent = station.jp;
     el.getElementsByClassName('dmc-sta-name en')[0].textContent = station.en;
     el.getElementsByClassName('dmc-numbering-line-code')[0].textContent = station.linecode;
     el.getElementsByClassName('dmc-numbering-sta-number')[0].textContent = station.stanumber.padStart(2, '0');
-    
-    el.getElementsByClassName('dmc-sta-name en')[0].style.letterSpacing = 'unset';
-    el.getElementsByClassName('dmc-sta-name en')[0].style.transform = 'unset';
 
-    el.getElementsByClassName('dmc-sta-name jp')[0].className = 'dmc-sta-name jp';
-    el.getElementsByClassName('dmc-sta-name en')[0].className = 'dmc-sta-name en';
-
-    // 駅名の文字数に応じたクラスを追加
+    // 駅名の文字数に応じたクラスを追加             
     if (station.jp.length <= 7) {
         el.getElementsByClassName('dmc-sta-name jp')[0].classList.add(getLetterClassV(station.jp.length));
     }
@@ -173,24 +215,21 @@ function updateDMC(el, station) {
 
     console.log(el.getElementsByClassName('dmc-sta-name en')[0].scrollWidth);
 
-    el.getElementsByClassName('dmc-line-l')[0].className = 'dmc-line-l';
-    el.getElementsByClassName('dmc-line-r')[0].className = 'dmc-line-r';
-    el.getElementsByClassName('dmc-circle')[0].className = 'dmc-circle';
 
     if (station.status === 'greyed') {
-        el.getElementsByClassName('dmc-line-l')[0].classList.add('grey');
-        el.getElementsByClassName('dmc-line-r')[0].classList.add('grey');
+        el.getElementsByClassName('dmc-line left')[0].classList.add('grey');
+        el.getElementsByClassName('dmc-line right')[0].classList.add('grey');
         el.getElementsByClassName('dmc-circle')[0].classList.add('grey');
         el.getElementsByClassName('dmc-sta-name')[0].classList.add('grey');
         el.getElementsByClassName('dmc-sta-name')[1].classList.add('grey');
     } else if (station.status === 'passed') {
-        el.getElementsByClassName('dmc-line-l')[0].classList.add('grey');
-        el.getElementsByClassName('dmc-line-r')[0].classList.add('grey');
+        el.getElementsByClassName('dmc-line left')[0].classList.add('grey');
+        el.getElementsByClassName('dmc-line right')[0].classList.add('grey');
         el.getElementsByClassName('dmc-circle')[0].classList.add('passed');
         el.getElementsByClassName('dmc-sta-name')[0].classList.add('grey');
         el.getElementsByClassName('dmc-sta-name')[1].classList.add('grey');
     } else if (station.status === 'current') {
-        el.getElementsByClassName('dmc-line-l')[0].classList.add('grey');
+        el.getElementsByClassName('dmc-line left')[0].classList.add('grey');
         el.getElementsByClassName('dmc-circle')[0].classList.add('now');
     } else if (station.status === 'next') {
         el.getElementsByClassName('dmc-circle')[0].classList.add('next');
@@ -208,9 +247,6 @@ function updateDMC(el, station) {
     } else if (station.marker === 'stopping') {
         el.getElementsByClassName('marker-border')[0].className = 'marker-border stopping';
         el.getElementsByClassName('marker-main')[0].className = 'marker-main stopping';
-    } else {
-        el.getElementsByClassName('marker-border')[0].className = 'marker-border';
-        el.getElementsByClassName('marker-main')[0].className = 'marker-main';
     }
 }
 

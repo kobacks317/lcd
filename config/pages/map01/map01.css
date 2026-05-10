@@ -155,7 +155,7 @@ body {
     /* border: solid; */
     display: flex;
     justify-content: left;
-    left: 100px;
+    left: 130px;
     height: 730px;
     width: 1660px;
 }
@@ -169,6 +169,10 @@ body {
     /* border: solid; */
     width: 12.5%;
     height: 100%;
+}
+
+.dmc.blank {
+    visibility: hidden !important;
 }
 
 .dmc-sta-name.jp {
@@ -211,7 +215,7 @@ body {
     color: grey;
 }
 
-.dmc-line-l, .dmc-line-r {
+.dmc-line {
     /* border: solid; */
     top: 360px;
     width: 50%;
@@ -219,16 +223,37 @@ body {
     background: var(--config-color);
 }
 
-.dmc-line-l {
-    left: 0px;
-    /* background: grey; */
+.dmc-line.left {
+    right: 50%;
+    rotate: 180deg;
 }
 
-.dmc-line-r {
-    right: 0px;
+.dmc-line.right {
+    left: 50%;
 }
 
-.dmc-line-l.grey, .dmc-line-r.grey {
+.dmc-line.continue {
+    width: 80%;
+    clip-path: polygon(0% 0%, 80% 0%, 100% 50%, 80% 100%, 0% 100%);
+}
+
+.dmc-line.end {
+    width: 80%;
+    clip-path: polygon(0% 0%, 80% 0%, 100% 50%, 80% 100%, 0% 100%);
+    background: linear-gradient(to right, var(--config-color) 65%, white 65%, white 70%, grey 70%);
+}
+
+.dmc-line.omit {
+    width: 51%;
+    clip-path: url(#wave-right);
+}
+
+.dmc-line.terminal {
+    width: 80%;
+    border-radius: 0px 15px 15px 0px;
+}
+
+.dmc-line.grey {
     background: grey !important;
 }
 
