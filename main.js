@@ -98,11 +98,16 @@ window.addEventListener('message', (event) => {
         return;
     }
     const message = event.data;
-    if (!message || message.type !== 'popupLoaded') {
-        return;
+    if (message.type == 'popupLoaded') {
+        popupReady = true;
+        sendStationDataToFrames();
+    } else if (message.type == 'control') {
+        if (message.content == 'next') {
+            handleNextStatusClick();
+        } else if (message.content == 'prev') {
+            handlePrevStatusClick();
+        }
     }
-    popupReady = true;
-    sendStationDataToFrames();
 });
 
 async function loadConfigList() {
@@ -602,15 +607,20 @@ function openPopupWindow(config, fileName) {
     #viewport { width:${width}px; height:${height}px; transform-origin:center center; }
     #viewArea { width:100%; height:100%; display:flex; flex-direction:column; }
     iframe { width:100%; border:none; margin:0; padding:0; overflow:hidden; }
+    #prevButton, #nextButton { width: 50%; height: 100%; top: 0; z-index: 9999; }
+    #prevButton { left: 0%; }
+    #nextButton { left: 50%; }
 </style>
 </head>
 <body>
 <div id="viewport">
-    <div id="viewArea">
-        ${mainPagePath ? `<iframe src="${mainPagePath}" title="main_page" style="height:${mainPageHeight}px;" scrolling="no"></iframe>` : ''}
-        ${infoPagePath ? `<iframe src="${infoPagePath}" title="info_page" style="height:${infoPageHeight}px;" scrolling="no"></iframe>` : ''}
-    </div>
+<div id="viewArea">
+${mainPagePath ? `<iframe src="${mainPagePath}" title="main_page" style="height:${mainPageHeight}px;" scrolling="no"></iframe>` : ''}
+${infoPagePath ? `<iframe src="${infoPagePath}" title="info_page" style="height:${infoPageHeight}px;" scrolling="no"></iframe>` : ''}
 </div>
+</div>
+<div id="prevButton" onclick="sendControl('prev')"></div>
+<div id="nextButton" onclick="sendControl('next')"></div>
 <script>
 (function() {
     const viewport = document.getElementById('viewport');
@@ -665,6 +675,11 @@ function openPopupWindow(config, fileName) {
         }
     });
 })();
+</script>
+<script>
+    function sendControl(content) {
+        window.opener.postMessage({type: 'control', content: content}, window.location.origin);
+    }
 </script>
 </body>
 </html>`;

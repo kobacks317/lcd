@@ -9,8 +9,8 @@ body {
     --config-color: #ff0000;
     --type-background: #ffffff;
     --type-color: #000000;
-    --jp-opacity: 1;
-    --en-opacity: 0;
+    --jp-opacity: 0;
+    --en-opacity: 1;
     --kana-opacity: 0;
 }
 
@@ -211,7 +211,8 @@ body {
 }
 
 .sta.name.en {
-    top: -15px
+    top: -15px;
+    font-weight: 550;
 }
 
 
