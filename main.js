@@ -680,6 +680,14 @@ ${infoPagePath ? `<iframe src="${infoPagePath}" title="info_page" style="height:
     function sendControl(content) {
         window.opener.postMessage({type: 'control', content: content}, window.location.origin);
     }
+    document.addEventListener('keydown', (event) => {
+        console.log(event.code);
+        if (event.code == 'ArrowLeft') {
+            sendControl('prev');
+        } else if (event.code == 'ArrowRight') {
+            sendControl('next');
+        }
+    });
 </script>
 </body>
 </html>`;
