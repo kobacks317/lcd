@@ -169,8 +169,8 @@ body {
     -webkit-writing-mode: vertical-rl;
     writing-mode: vertical-rl;
     flex-direction: row;
-    display: flex;
-    align-items: center;
+    display: grid;
+    place-items: center;
     width: 100%;
     height: 100%;
 }
