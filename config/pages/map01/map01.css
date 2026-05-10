@@ -165,22 +165,16 @@ body {
     height: 100%;
 }
 
-.vertical-rl-container {
-    -webkit-writing-mode: vertical-rl;
-    writing-mode: vertical-rl;
-    flex-direction: row;
-    display: grid;
-    place-items: center;
-    width: 100%;
-    height: 100%;
-}
-
 .dmc-sta-name.jp {
     /* border: solid; */
+    -webkit-writing-mode: vertical-rl;
+    writing-mode: vertical-rl;
     font-size: 77px;
     top: 30px;
     height: 325px;
     transform-origin: top;
+    position: absolute;
+    translate: -55%;
 }
 
 .dmc-sta-name.en {
