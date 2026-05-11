@@ -1,0 +1,15 @@
+﻿staNo,stacode,linecode,stanumber,jp,en,kana,local,rapid,exp,transfer
+1,,JL,19,綾瀬,Ayase,あやせ,0,,,jl.c
+2,,JL,20,亀有,Kameari,かめあり,2,,,
+3,,JL,21,金町,Kanamachi,かなまち,4,,,ks
+4,,JL,22,松戸,Matsudo,まつど,6,,,jj.jl.sl
+5,,JL,23,北松戸,Kita-Matsudo,きたまつど,8,,,
+6,,JL,24,馬橋,Mabashi,まばし,10,,,rn
+7,,JL,25,新松戸,Shin-Matsudo,しんまつど,12,,,jm.jl.rn
+8,,JL,26,北小金,Kita-Kogane,きたこがね,14,,,
+9,,JL,27,南柏,Minami-Kashiwa,みなみかしわ,16,,,
+10,,JL,28,柏,Kashiwa,かしわ,18,,,jj.jl.td
+11,,JL,29,北柏,Kita-Kashiwa,きたかしわ,20,,,
+12,,JL,30,我孫子,Abiko,あびこ,22,,,jj.jl.nr
+13,,JL,31,天王台,Tennōdai,てんのうだい,24,,,jj.jl
+14,,JL,32,取手,Toride,とりで,26,,,jj.jl.kt
