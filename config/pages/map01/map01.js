@@ -298,7 +298,11 @@ window.addEventListener('message', (event) => {
         return;
     }
     if (message.type === 'stationUpdate') {
-        updateStationInfo(message);
+        try {
+            updateStationInfo(message);
+        } catch (error) {
+            alert(error);
+        }
     } else if (message.type === 'pauseUpdate') {
         setPauseState(true);
     } else if (message.type === 'resumeUpdate') {

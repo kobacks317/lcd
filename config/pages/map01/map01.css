@@ -189,6 +189,10 @@ body {
     font-family: sans-serif;
 }
 
+.dmc-sta-name.kana {
+    font-weight: 550;
+}
+
 .dmc-sta-name.en {
     /* border: solid; */
     font-size: 69px;
