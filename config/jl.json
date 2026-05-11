@@ -1,0 +1,31 @@
+{
+  "width": "1920",
+  "height": "1080",
+  "main_page_height": "370",
+  "interval": "3000",
+  "types": [
+    {
+      "id": "local",
+      "name": "各駅停車",
+      "name_en": "Local",
+      "color": "#000000",
+      "background": "#ffffff"
+    },
+    {
+      "id": "rapid",
+      "name": "快速",
+      "name_en": "Rapid",
+      "color": "#ff0000",
+      "background": "#ffffff"
+    }
+  ],
+  "main_page": ".\\pages\\main01\\index.html",
+  "info_page": [
+    ".\\pages\\map01\\index.html",
+    ".\\pages\\wide_map01\\index.html",
+    ".\\pages\\platform01\\index.html"
+  ],
+  "title": "常磐線各駅停車",
+  "data": ".\\data\\jl.csv",
+  "color": "#00B2E5"
+}
