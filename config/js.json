@@ -26,6 +26,6 @@
     ".\\pages\\platform01\\index.html"
   ],
   "title": "湘南新宿ライン",
-  "data": ".\\data\\js_jo_ju.csv",
+  "data": ".\\data\\js.csv",
   "color": "#E21118"
 }
