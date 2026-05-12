@@ -112,6 +112,7 @@ function updateStationInfo(message) {
     }
     lastTime = message.stationList[lastStopIdx][message.selectedType.id];
 
+    // 駅名配置
     for (let i = 0; i < dmcIds.length; i++) {
         if (dmcStationsIndexes[i] < 0) {
             updateDMC(document.getElementById(dmcIds[i]), null);
@@ -140,7 +141,30 @@ function updateStationInfo(message) {
             }
 
             // ライン形状を設定
+            station.lineShape = ''
+            if (i == 0) {
+                station.lineShape += ' left-edge';
+            } else if (i == dmcIds.length-1) {
+                station.lineShape += ' right-edge';
+            }
 
+            if (stationIndexes.indexOf(dmcStationsIndexes[i]) == 0) {
+                station.lineShape += ' terminal-start';
+            } else if (stationIndexes.indexOf(dmcStationsIndexes[i]) == stationIndexes.length-1) {
+                station.lineShape += ' terminal-end';
+            } else if (dmcStationsIndexes[i] == message.originIndex) {
+                station.lineShape += ' start';
+            } else if (dmcStationsIndexes[i] == message.terminalIndex) {
+                station.lineShape += ' end';
+            } else if (i == dmcIds.length-1) {
+                station.lineShape += ' continue';
+            }
+            if (i < dmcIds.length-1 && Math.abs(dmcStationsIndexes[i]-dmcStationsIndexes[i+1]) > 1 && dmcStationsIndexes[i]>=0 && dmcStationsIndexes[i+1]>0) {
+                station.lineShape += ' omit-start';
+            }
+            if (i > 0 && Math.abs(dmcStationsIndexes[i]-dmcStationsIndexes[i-1]) > 1 && dmcStationsIndexes[i]>=0 && dmcStationsIndexes[i-1]>0) {
+                station.lineShape += ' omit-end';
+            }
             updateDMC(document.getElementById(dmcIds[i]), station);
         }
     }
@@ -238,6 +262,9 @@ function updateDMC(el, station) {
         el.getElementsByClassName('dmc-sta-name')[0].classList.add('grey');
         el.getElementsByClassName('dmc-sta-name')[1].classList.add('grey');
     }
+    
+    el.getElementsByClassName('dmc-line left')[0].classList += station.lineShape;
+    el.getElementsByClassName('dmc-line right')[0].classList += station.lineShape;
 
     el.getElementsByClassName('dmc-circle')[0].textContent = station.time;
 

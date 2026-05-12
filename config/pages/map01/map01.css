@@ -236,23 +236,23 @@ body {
     left: 50%;
 }
 
-.dmc-line.continue {
+.dmc-line.right.continue {
     width: 80%;
     clip-path: polygon(0% 0%, 80% 0%, 100% 50%, 80% 100%, 0% 100%);
 }
 
-.dmc-line.end {
+.dmc-line.right.end {
     width: 80%;
     clip-path: polygon(0% 0%, 80% 0%, 100% 50%, 80% 100%, 0% 100%);
     background: linear-gradient(to right, var(--config-color) 65%, white 65%, white 70%, grey 70%);
 }
 
-.dmc-line.omit {
+.dmc-line.right.omit-start, .dmc-line.left.omit-end {
     width: 51%;
     clip-path: url(#wave-right);
 }
 
-.dmc-line.terminal {
+.dmc-line.right.terminal-end, .dmc-line.left.terminal-start {
     width: 80%;
     border-radius: 0px 15px 15px 0px;
 }

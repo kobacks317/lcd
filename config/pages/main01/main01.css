@@ -149,7 +149,7 @@ body {
 
 #numbering-box.with-sta-code {
     height: 240px;
-    border-color: white;
+    /* border-color: white; */
 }
 
 #numbering {
