@@ -29,6 +29,11 @@ body {
     opacity: var(--en-opacity);
 }
 
+.contrast {
+    color: contrast-color(var(--config-color));
+}
+
+
 
 
 #main, #info {
@@ -241,7 +246,7 @@ body {
     clip-path: polygon(0% 0%, 80% 0%, 100% 50%, 80% 100%, 0% 100%);
 }
 
-.dmc-line.right.end {
+.-dmc-line.right.end {
     width: 80%;
     clip-path: polygon(0% 0%, 80% 0%, 100% 50%, 80% 100%, 0% 100%);
     background: linear-gradient(to right, var(--config-color) 65%, white 65%, white 70%, grey 70%);
@@ -252,7 +257,7 @@ body {
     clip-path: url(#wave-right);
 }
 
-.dmc-line.right.terminal-end, .dmc-line.left.terminal-start {
+.-dmc-line.right.terminal-end, .-dmc-line.left.terminal-start {
     width: 80%;
     border-radius: 0px 15px 15px 0px;
 }
@@ -273,6 +278,10 @@ body {
     display: flex;
     justify-content: center;
     text-align: center;
+}
+
+.dmc-numbering.hidden {
+    visibility: hidden;
 }
 
 .dmc-numbering-line-code {

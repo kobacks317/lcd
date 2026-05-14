@@ -205,6 +205,13 @@ function updateDMC(el, station) {
     el.getElementsByClassName('dmc-sta-name en')[0].textContent = station.en;
     el.getElementsByClassName('dmc-numbering-line-code')[0].textContent = station.linecode;
     el.getElementsByClassName('dmc-numbering-sta-number')[0].textContent = station.stanumber.padStart(2, '0');
+    
+    // ナンバリング有無
+    el.getElementsByClassName('dmc-numbering')[0].className = 'dmc-numbering';
+    if (station.linecode == '') {
+        el.getElementsByClassName('dmc-numbering')[0].classList.add('hidden');
+    }
+    
 
     // 駅名の文字数に応じたクラスを追加             
     if (station.jp.length <= 7) {

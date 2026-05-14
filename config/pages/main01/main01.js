@@ -139,7 +139,9 @@ function updateStationInfo(message) {
     document.getElementById('type-jp').className = 'type jp kana';
     document.getElementById('type-en').className = 'type en';
     
-    if (message.stationList[message.currentIndex].stacode === '') {
+    if (message.stationList[message.currentIndex].linecode === '') {
+        document.getElementById('numbering-box').className = 'hidden';
+    } else if (message.stationList[message.currentIndex].stacode === '') {
         document.getElementById('numbering-box').className = '';
     } else {
         document.getElementById('numbering-box').className = 'with-sta-code';
@@ -192,7 +194,7 @@ function updateStationInfo(message) {
     document.getElementById('destination-en').style.letterSpacing = null;
     document.getElementById('destination-en').style.transform = null;
     sw = document.getElementById('destination-en').scrollWidth;
-    cw = document.getElementById('type-box').clientWidth;
+    cw = document.getElementById('type-box').clientWidth * 3/4;
     if (sw > cw) {
         ls = (sw - cw) / (message.stationList[message.terminalIndex].en.length - 1);
         if (ls <= 6) {

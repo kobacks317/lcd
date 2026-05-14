@@ -572,7 +572,7 @@ function openBlankPopup() {
     popupWindow = window.open('', '_blank', features);
     if (popupWindow) {
         popupWindow.document.open();
-        popupWindow.document.write('<!DOCTYPE html><html><head><title>LCD Display</title><meta charset="UTF-8"></head><body style="margin:0;padding:0;font-family:sans-serif;">読み込み中...</body></html>');
+        popupWindow.document.write('<!DOCTYPE html><html><head><title>HTML LCDy</title><meta charset="UTF-8"></head><body style="margin:0;padding:0;font-family:sans-serif;">読み込み中...</body></html>');
         popupWindow.document.close();
     }
 }
@@ -600,7 +600,7 @@ function openPopupWindow(config, fileName) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${config.title || 'LCD Display'}</title>
+<title>HTML LCD</title>
 <style>
     html, body { margin:0; padding:0; height:100%; overflow:hidden; background:#000; }
     body { display:flex; align-items:center; justify-content:center; }
