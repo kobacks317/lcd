@@ -94,7 +94,6 @@ body {
 
 .destination {
     color: contrast-color(var(--config-color));
-    -webkit-text-stroke: 2px black;
     font-weight: 600;
 }
 
@@ -104,6 +103,7 @@ body {
     line-height: 90px;
     transform-origin: left;
     text-align: left;
+    -webkit-text-stroke: 2px black;
 }
 
 .destination.name.jp {
