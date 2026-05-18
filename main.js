@@ -723,10 +723,11 @@ function setStatus(message, isError) {
     status.style.color = isError ? '#b91c1c' : '#334155';
 }
 
-function sync() {
-    syncData = getSyncData();
+async function sync() {
+    syncData = await getSyncData();
     if (syncData.lcdStep != syncStep) {
         syncStep = syncData.lcdStep;
         handleNextStatusClick();
+        console.log(syncStep);
     }
 }
