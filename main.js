@@ -713,7 +713,9 @@ ${infoPagePath ? `<iframe src="${infoPagePath}" title="info_page" style="height:
     }
 
     if (interval == null) {
-        interval = window.setInterval(sync, 3000);
+        interval = window.setInterval(async () => {
+            await sync();
+        }, 3000);
     }
 }
 
