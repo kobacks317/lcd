@@ -40,6 +40,18 @@ let typeSelect = null;
 let popupReady = false;
 let isPaused = false;
 
+const url = new URL(location.href);
+const syncUrl = "https://" + url.searchParams.get('sync');
+let interval = null;
+let syncStep = 0;
+
+// Flaskサーバから定期的にSyncDataを取得
+async function getSyncData() {
+  const response = await fetch(syncUrl);
+  const syncData = await response.json();
+  return syncData;
+}
+
 window.addEventListener('DOMContentLoaded', () => {
     const configSelect = $('configFile');
     const originSelect = $('originStation');
@@ -699,10 +711,22 @@ ${infoPagePath ? `<iframe src="${infoPagePath}" title="info_page" style="height:
     } catch (error) {
         console.error('Failed to write popup HTML:', error);
     }
+
+    if (interval != null) {
+        interval = window.setInterval(sync(), 3000);
+    }
 }
 
 function setStatus(message, isError) {
     const status = $('status');
     status.textContent = message;
     status.style.color = isError ? '#b91c1c' : '#334155';
+}
+
+function sync() {
+    syncData = getSyncData();
+    if (syncData.lcdStep > syncStep) {
+        syncStep += 1;
+        handleNextStatusClick();
+    }
 }
