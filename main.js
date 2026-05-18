@@ -715,7 +715,7 @@ ${infoPagePath ? `<iframe src="${infoPagePath}" title="info_page" style="height:
     if (interval == null) {
         interval = window.setInterval(async () => {
             await sync();
-        }, 3000);
+        }, 1000);
     }
 }
 
