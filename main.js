@@ -712,7 +712,7 @@ ${infoPagePath ? `<iframe src="${infoPagePath}" title="info_page" style="height:
         console.error('Failed to write popup HTML:', error);
     }
 
-    if (interval != null) {
+    if (interval == null) {
         interval = window.setInterval(sync(), 3000);
     }
 }
@@ -725,8 +725,8 @@ function setStatus(message, isError) {
 
 function sync() {
     syncData = getSyncData();
-    if (syncData.lcdStep > syncStep) {
-        syncStep += 1;
+    if (syncData.lcdStep != syncStep) {
+        syncStep = syncData.lcdStep;
         handleNextStatusClick();
     }
 }
