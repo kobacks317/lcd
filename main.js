@@ -712,10 +712,45 @@ ${infoPagePath ? `<iframe src="${infoPagePath}" title="info_page" style="height:
         console.error('Failed to write popup HTML:', error);
     }
 
-    if (interval == null) {
-        interval = window.setInterval(async () => {
+    // --- Web Workerのセットアップ ---
+    const workerCode = `
+    let timerId = null;
+    self.onmessage = function(e) {
+        if (e.data.action === 'start') {
+        // 最初の1回を即時実行
+        self.postMessage('TICK');
+        // 1秒（1000ms）ごとにメインスレッドに通知を送る
+        timerId = setInterval(() => {
+            self.postMessage('TICK');
+        }, e.data.interval);
+        } else if (e.data.action === 'stop') {
+        clearInterval(timerId);
+        }
+    };
+    `;
+
+    // 安全のため、既にWorkerが動いていたら一度止める
+    if (window.myWorker) {
+        window.myWorker.postMessage({ action: 'stop' });
+    }
+
+    // Workerの生成
+    const blob = new Blob([workerCode], { type: 'application/javascript' });
+    window.myWorker = new Worker(URL.createObjectURL(blob));
+
+    // --- Workerから合図（TICK）が届いたときの処理 ---
+    window.myWorker.onmessage = async function(e) {
+        if (e.data === 'TICK') {
+            // 元々 setInterval の中で呼んでいた sync() をここで実行
             await sync();
-        }, 1000);
+        }
+    };
+
+    // --- 元の条件分岐部分の書き換え ---
+    // interval変数にWorkerのインスタンスを入れておくことで、重複起動を防ぐ既存のロジックを崩さずに済みます
+    if (interval == null) {
+        interval = window.myWorker; // フラグの代わりにWorkerを代入
+        window.myWorker.postMessage({ action: 'start', interval: 1000 });
     }
 }
 
