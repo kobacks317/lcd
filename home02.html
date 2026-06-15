@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LCD Simulator - 統合コントロールパネル</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --panel-bg: #ffffff;
+            --primary-color: #007bff;
+            --primary-hover: #0056b3;
+            --text-color: #333333;
+            --border-color: #cccccc;
+            --status-running: #28a745;
+            --status-arriving: #ffc107;
+            --status-stopping: #dc3545;
+            --status-departing: #17a2b8;
+            --accent-color: #e83e8c;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            padding-bottom: 80px;
+        }
+
+        header {
+            background-color: #222;
+            color: #fff;
+            padding: 12px;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        /* 横スクロール対応タブナビゲーション（スマホ対策） */
+        .tabs {
+            display: flex;
+            background-color: #333;
+            overflow-x: auto;
+            white-space: nowrap;
+            sticky: top;
+            z-index: 100;
+            -webkit-overflow-scrolling: touch;
+        }
+        .tabs::-webkit-scrollbar { display: none; } /* スクロールバー非表示 */
+
+        .tab-btn {
+            flex: 0 0 auto;
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            color: #fff;
+            border-bottom-color: var(--primary-color);
+            background-color: rgba(255,255,255,0.05);
+        }
+
+        .container { max-width: 800px; margin: 15px auto; padding: 0 12px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* パネル構造 */
+        .panel {
+            background: var(--panel-bg);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .panel-title {
+            font-size: 0.95rem;
+            font-weight: bold;
+            margin-bottom: 12px;
+            border-left: 4px solid var(--primary-color);
+            padding-left: 8px;
+            color: #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* ソース管理エリア（新規・読込・サーバー） */
+        .source-manager {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
+        }
+        .source-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        /* フォーム共通 */
+        .form-group { margin-bottom: 12px; }
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 4px;
+            color: #666;
+        }
+        .lang-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 6px;
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px dashed #ddd;
+        }
+        select, input[type="text"], input[type="number"], input[type="color"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.95rem;
+            background-color: #fff;
+        }
+        input[type="color"] { height: 38px; padding: 2px; }
+
+        /* 動的リストカード */
+        .card-item {
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #fff;
+            position: relative;
+        }
+        .card-header-title { font-size: 0.85rem; font-weight: bold; color: #495057; margin-bottom: 6px; }
+
+        /* ボタン */
+        .btn {
+            display: inline-block;
+            width: 100%;
+            padding: 10px;
+            background-color: var(--primary-color);
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+        }
+        .btn:hover { background-color: var(--primary-hover); }
+        .btn-sm { padding: 4px 8px; font-size: 0.75rem; width: auto; }
+        .btn-danger { background-color: var(--status-stopping); }
+        .btn-success { background-color: var(--status-running); }
+        
+        .status-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .btn-status { padding: 12px; font-size: 0.9rem; color: #fff; opacity: 0.5; }
+        .btn-status.active { opacity: 1; font-weight: bold; }
+        #status-running { background: var(--status-running); }
+        #status-arriving { background: var(--status-arriving); color: #333; }
+        #status-stopping { background: var(--status-stopping); }
+        #status-departing { background: var(--status-departing); }
+
+        /* 下部固定ランチャー */
+        .launcher-zone {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: #222; padding: 10px; z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+    <header>LCD Simulator 統合コントロール</header>
+
+    <nav class="tabs" id="main-tabs">
+        <button class="tab-btn active" onclick="switchTab('tab-operation')">運行操作</button>
+        <button class="tab-btn" onclick="switchTab('tab-train-editor')">列車定義エディタ</button>
+        <button class="tab-btn" onclick="switchTab('tab-route-editor')">路線定義エディタ</button>
+        <button class="tab-btn" onclick="switchTab('tab-design-editor')">デザインエディタ</button>
+        <button class="tab-btn" onclick="switchTab('tab-sync-demo')">同期・デモ</button>
+    </nav>
+
+    <div class="container">
+        
+        <div id="tab-operation" class="tab-content active">
+            <div class="panel">
+                <div class="panel-title">シミュレーション制御</div>
+                <div class="form-group">
+                    <label>系統選択</label>
+                    <select id="op-line-system" onchange="syncToLcd()"><option value="default">サンプル系統</option></select>
+                </div>
+                <div class="form-group">
+                    <label>列車種別</label>
+                    <select id="op-train-type" onchange="syncToLcd()"><option value="local">各駅停車</option></select>
+                </div>
+                <div class="grid-2" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div class="form-group">
+                        <label>現在駅 (通し番号)</label>
+                        <select id="op-current-station" onchange="syncToLcd()"><option value="0">東京 (0)</option><option value="1">品川 (1)</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>行先</label>
+                        <select id="op-terminal-station" onchange="syncToLcd()"><option value="1">品川</option></select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>運行状態</label>
+                    <div class="status-grid">
+                        <button id="status-running" class="btn btn-status" onclick="setStatus('running')">走行中</button>
+                        <button id="status-arriving" class="btn btn-status" onclick="setStatus('arriving')">到着中</button>
+                        <button id="status-stopping" class="btn btn-status" onclick="setStatus('stopping')">停車中</button>
+                        <button id="status-departing" class="btn btn-status active" onclick="setStatus('departing')">発車中</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">車両環境</div>
+                <div class="status-grid">
+                    <div class="form-group"><label>総編成数</label><input type="number" id="op-total-cars" value="10" onchange="syncToLcd()"></div>
+                    <div class="form-group"><label>自号車</label><input type="number" id="op-this-car" value="1" onchange="syncToLcd()"></div>
+                </div>
+                <div class="form-group">
+                    <label>設置場所</label>
+                    <select id="op-position" onchange="syncToLcd()">
+                        <option value="left">左側 (ドア上)</option><option value="right">右側 (ドア上)</option>
+                        <option value="front">前行 (妻面)</option><option value="back">後行 (妻面)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-train-editor" class="tab-content">
+            <div class="source-manager">
+                <strong>列車定義データソース管理</strong>
+                <div class="source-actions">
+                    <button class="btn btn-sm btn-success" onclick="clearForm('train')">新規作成</button>
+                    <input type="file" id="upload-train" accept=".json" style="display:none" onchange="uploadJson(this, 'train')">
+                    <button class="btn btn-sm" onclick="document.getElementById('upload-train').click()">スマホから読込</button>
+                    <select id="server-train" onchange="loadServerPreset(this, 'train')">
+                        <option value="">-- サーバから選択 --</option>
+                        <option value="preset-e233">E233系 標準設定</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">路線系統総称 (多言語)</div>
+                <div class="lang-group">
+                    <div class="form-group"><label>日本語</label><input type="text" id="tr-name-ja"></div>
+                    <div class="form-group"><label>英語</label><input type="text" id="tr-name-en"></div>
+                    <div class="form-group"><label>かな</label><input type="text" id="tr-name-kana"></div>
+                    <div class="form-group"><label>中国語</label><input type="text" id="tr-name-zh"></div>
+                    <div class="form-group"><label>韓国語</label><input type="text" id="tr-name-ko"></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">系統リスト <button class="btn btn-sm btn-success" onclick="addTrainSystem()">+ 追加</button></div>
+                <div id="train-systems-container"></div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">種別リスト <button class="btn btn-sm btn-success" onclick="addTrainType()">+ 追加</button></div>
+                <div id="train-types-container"></div>
+            </div>
+            <button class="btn style-demo" onclick="downloadConfig('train')">列車定義JSONを保存 (DL)</button>
+        </div>
+
+        <div id="tab-route-editor" class="tab-content">
+            <div class="source-manager">
+                <strong>路線定義データソース管理</strong>
+                <div class="source-actions">
+                    <button class="btn btn-sm btn-success" onclick="clearForm('route')">新規作成</button>
+                    <input type="file" id="upload-route" accept=".json" style="display:none" onchange="uploadJson(this, 'route')">
+                    <button class="btn btn-sm" onclick="document.getElementById('upload-route').click()">スマホから読込</button>
+                    <select id="server-route" onchange="loadServerPreset(this, 'route')">
+                        <option value="">-- サーバから選択 --</option>
+                        <option value="preset-tokaido">東海道線 サンプル</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">基本連携定義</div>
+                <div class="form-group">
+                    <label>乗換路線定義JSON参照パス</label>
+                    <input type="text" id="rt-transfer-path" value="transfer/default.json">
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">駅リスト (下り方向順に定義) <button class="btn btn-sm btn-success" onclick="addRouteStation()">+ 駅を追加</button></div>
+                <div id="route-stations-container"></div>
+            </div>
+            <button class="btn style-demo" onclick="downloadConfig('route')">路線定義JSONを保存 (DL)</button>
+        </div>
+
+        <div id="tab-design-editor" class="tab-content">
+            <div class="source-manager">
+                <strong>デザイン定義データソース管理</strong>
+                <div class="source-actions">
+                    <button class="btn btn-sm btn-success" onclick="clearForm('design')">新規作成</button>
+                    <input type="file" id="upload-design" accept=".json" style="display:none" onchange="uploadJson(this, 'design')">
+                    <button class="btn btn-sm" onclick="document.getElementById('upload-design').click()">スマホから読込</button>
+                    <select id="server-design" onchange="loadServerPreset(this, 'design')">
+                        <option value="">-- サーバから選択 --</option>
+                        <option value="preset-square">標準スクエアパターン</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">メインテンプレート設定</div>
+                <div class="form-group">
+                    <label>メインエリアHTMLパス</label>
+                    <input type="text" id="ds-main-path" value="main/pattern1.html">
+                </div>
+                <label style="font-size:0.8rem; font-weight:bold; color:#666;">各言語の表示時間設定 (秒)</label>
+                <div class="lang-group">
+                    <div class="form-group"><label>日本語</label><input type="number" id="ds-time-ja" value="3" step="0.1"></div>
+                    <div class="form-group"><label>英語</label><input type="number" id="ds-time-en" value="3" step="0.1"></div>
+                    <div class="form-group"><label>かな</label><input type="number" id="ds-time-kana" value="2" step="0.1"></div>
+                    <div class="form-group"><label>中国語</label><input type="number" id="ds-time-zh" value="3" step="0.1"></div>
+                    <div class="form-group"><label>韓国語</label><input type="number" id="ds-time-ko" value="3" step="0.1"></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">UIテキスト辞書（次駅表現など）</div>
+                <div class="form-group">
+                    <label>「つぎは」の各言語表現</label>
+                    <div class="lang-group">
+                        <input type="text" id="ds-dict-next-ja" value="つぎは">
+                        <input type="text" id="ds-dict-next-en" value="Next">
+                        <input type="text" id="ds-dict-next-kana" value="つぎは">
+                        <input type="text" id="ds-dict-next-zh" value="下一站">
+                        <input type="text" id="ds-dict-next-ko" value="다음은">
+                    </div>
+                </div>
+            </div>
+            <button class="btn style-demo" onclick="downloadConfig('design')">デザイン定義JSONを保存 (DL)</button>
+        </div>
+
+        <div id="tab-sync-demo" class="tab-content">
+            <div class="panel">
+                <div class="panel-title">外部同期 (Web Worker)</div>
+                <div class="form-group">
+                    <label>同期URL</label>
+                    <input type="text" id="sync-url" value="http://localhost:3000/status">
+                </div>
+                <button id="btn-sync-toggle" class="btn" onclick="toggleSync()">同期を開始</button>
+            </div>
+            <div class="panel">
+                <div class="panel-title">自動デモシミュレーション</div>
+                <div class="form-group">
+                    <label>倍速設定</label>
+                    <select id="demo-speed"><option value="1">等倍速度</option><option value="2">2倍速</option><option value="5">5倍速</option></select>
+                </div>
+                <button id="btn-demo-toggle" class="btn" style="background:#6f42c1;" onclick="toggleDemo()">デモモード開始</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="launcher-zone">
+        <button class="btn" style="background: var(--accent-color);" onclick="openLcdWindow()">LCD表示画面 (ポップアップ) を開く</button>
+    </div>
+
+    <script>
+        // --- 内部状態・データ管理オブジェクト ---
+        let simState = { stationIndex: 0, status: 'departing', totalCars: 10, thisCar: 1, position: 'left' };
+        let lcdWindow = null;
+        let worker = null;
+        let isSyncing = false;
+        let isDemoMode = false;
+        let demoTimer = null;
+
+        // タブ切り替え
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            
+            // クリックされたボタンの特定とアクティブ化
+            const targetBtn = Array.from(document.querySelectorAll('.tab-btn')).find(btn => btn.getAttribute('onclick').includes(tabId));
+            if(targetBtn) targetBtn.classList.add('active');
+        }
+
+        function setStatus(status) {
+            simState.status = status;
+            document.querySelectorAll('.btn-status').forEach(b => b.classList.remove('active'));
+            document.getElementById(`status-${status}`).classList.add('active');
+            syncToLcd();
+        }
+
+        // --- 各定義のビジュアルフォーム動的生成ロジック ---
+
+        // 1. 列車定義: 系統リストの追加
+        function addTrainSystem(data = {}) {
+            const container = document.getElementById('train-systems-container');
+            const id = data.id || `sys_${Date.now()}`;
+            const div = document.createElement('div');
+            div.className = 'card-item';
+            div.innerHTML = `
+                <div class="card-header-title">系統設定 (ID: ${id})</div>
+                <div class="form-group"><label>系統名 (日本語)</label><input type="text" class="sys-name-ja" value="${data.nameJa || ''}"></div>
+                <div class="form-group"><label>路線定義JSONパス</label><input type="text" class="sys-route-path" value="${data.routePath || 'route/line1.json'}"></div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                    <div class="form-group"><label>ラインカラー</label><input type="color" class="sys-color" value="${data.color || '#007bff'}"></div>
+                    <div class="form-group"><label>文字色</label><select class="sys-text-color"><option value="white" ${data.textColor==='white'?'selected':''}>白</option><option value="black" ${data.textColor==='black'?'selected':''}>黒</option></select></div>
+                </div>
+                <button class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">削除</button>
+            `;
+            container.appendChild(div);
+        }
+
+        // 2. 列車定義: 種別リストの追加
+        function addTrainType(data = {}) {
+            const container = document.getElementById('train-types-container');
+            const id = data.id || `type_${Date.now()}`;
+            const div = document.createElement('div');
+            div.className = 'card-item';
+            div.innerHTML = `
+                <div class="card-header-title">列車種別デザイン設定 (ID: ${id})</div>
+                <div class="form-group"><label>種別名 (日本語)</label><input type="text" class="type-name-ja" value="${data.nameJa || ''}"></div>
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px;">
+                    <div class="form-group"><label>背景</label><input type="color" class="type-bg" value="${data.bg || '#ff0000'}"></div>
+                    <div class="form-group"><label>文字</label><input type="color" class="type-fg" value="${data.fg || '#ffffff'}"></div>
+                    <div class="form-group"><label>輪郭</label><input type="color" class="type-stroke" value="${data.stroke || '#000000'}"></div>
+                </div>
+                <button class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">削除</button>
+            `;
+            container.appendChild(div);
+        }
+
+        // 3. 路線定義: 駅リストの追加
+        function addRouteStation(data = {}) {
+            const container = document.getElementById('route-stations-container');
+            const div = document.createElement('div');
+            div.className = 'card-item';
+            div.innerHTML = `
+                <div class="form-group"><label>駅名 (日本語)</label><input type="text" class="st-name-ja" value="${data.nameJa || ''}"></div>
+                <div class="form-group"><label>駅ナンバリング (例: JN-01)</label><input type="text" class="st-number" value="${data.number || ''}"></div>
+                <div class="form-group"><label>デフォルト到着番線</label><input type="text" class="st-track" value="${data.track || '1'}"></div>
+                <button class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">この駅を削除</button>
+            `;
+            container.appendChild(div);
+        }
+
+        // フォームクリア（新規作成）
+        function clearForm(type) {
+            if (type === 'train') {
+                document.querySelectorAll('#tab-train-editor input[type="text"]').forEach(i => i.value = '');
+                document.getElementById('train-systems-container').innerHTML = '';
+                document.getElementById('train-types-container').innerHTML = '';
+            } else if (type === 'route') {
+                document.getElementById('route-stations-container').innerHTML = '';
+            }
+        }
+
+        // スマホ/PCからのアップロード処理（読み込み・自動フォーム展開）
+        function uploadJson(input, type) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    parseAndFillForm(json, type);
+                } catch (err) { alert("JSONの解析に失敗しました。"); }
+            };
+            reader.readAsText(file);
+        }
+
+        // サーバーからのプリセット模擬読み込み
+        function loadServerPreset(select, type) {
+            if (!select.value) return;
+            // 実際はここでサーバーへfetchを行う想定。ここではモックデータを流し込む
+            let mockData = {};
+            if (type === 'train') {
+                mockData = {
+                    nameJa: "JR南武線", nameEn: "Nambu Line",
+                    systems: [{ id: "sys_1", nameJa: "川崎〜立川", color: "#ffd700", textColor: "black" }],
+                    types: [{ id: "type_1", nameJa: "快速", bg: "#ff0000", fg: "#ffffff", stroke: "#000000" }]
+                };
+            } else if (type === 'route') {
+                mockData = {
+                    stations: [{ nameJa: "川崎", number: "JN-01", track: "1" }, { nameJa: "尻手", number: "JN-02", track: "2" }]
+                };
+            }
+            parseAndFillForm(mockData, type);
+        }
+
+        // データを解析してビジュアルフォームにバインド
+        function parseAndFillForm(data, type) {
+            clearForm(type);
+            if (type === 'train') {
+                document.getElementById('tr-name-ja').value = data.nameJa || '';
+                document.getElementById('tr-name-en').value = data.nameEn || '';
+                if(data.systems) data.systems.forEach(s => addTrainSystem(s));
+                if(data.types) data.types.forEach(t => addTrainType(t));
+            } else if (type === 'route') {
+                if(data.stations) data.stations.forEach(st => addRouteStation(st));
+            }
+            alert("データをフォームに展開しました。編集可能です。");
+        }
+
+        // ビジュアルフォームからデータをまとめてJSONとしてダウンロード
+        function downloadConfig(type) {
+            let outputData = {};
+            if (type === 'train') {
+                outputData.nameJa = document.getElementById('tr-name-ja').value;
+                outputData.nameEn = document.getElementById('tr-name-en').value;
+                outputData.systems = [];
+                document.querySelectorAll('#train-systems-container .card-item').forEach(el => {
+                    outputData.systems.push({
+                        nameJa: el.querySelector('.sys-name-ja').value,
+                        routePath: el.querySelector('.sys-route-path').value,
+                        color: el.querySelector('.sys-color').value,
+                        textColor: el.querySelector('.sys-text-color').value
+                    });
+                });
+            }
+            
+            const blob = new Blob([JSON.stringify(outputData, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${type}_definition.json`;
+            a.click();
+        }
+
+        // --- ポップアップウィンドウ制御 & 通信関係 ---
+        function openLcdWindow() {
+            lcdWindow = window.open('', 'LcdMonitor', 'width=1280,height=720');
+            if (lcdWindow) {
+                lcdWindow.document.write(`
+                    <html><body style="background:#000;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;font-family:sans-serif;">
+                        <div style="text-align:center;border:2px solid #333;padding:40px;border-radius:10px;width:80%;">
+                            <h1>LCD表示画面 (待機中)</h1>
+                            <div id="data-view" style="font-family:monospace;background:#222;padding:15px;text-align:left;"></div>
+                        </div>
+                        <script>
+                            window.addEventListener('message', (e) => {
+                                document.getElementById('data-view').innerHTML = '<pre>' + JSON.stringify(e.data, null, 2) + '</pre>';
+                            });
+                        <\/script>
+                    </body></html>
+                `);
+                lcdWindow.document.close();
+                setTimeout(syncToLcd, 500);
+            }
+        }
+
+        function syncToLcd() {
+            if (lcdWindow && !lcdWindow.closed) {
+                simState.totalCars = parseInt(document.getElementById('op-total-cars').value) || 10;
+                simState.thisCar = parseInt(document.getElementById('op-this-car').value) || 1;
+                simState.position = document.getElementById('op-position').value;
+                simState.stationIndex = parseInt(document.getElementById('op-current-station').value) || 0;
+                lcdWindow.postMessage(simState, '*');
+            }
+        }
+
+        // --- Web Worker 同期 / デモロジック（省略なしで維持） ---
+        function toggleSync() {
+            const btn = document.getElementById('btn-sync-toggle');
+            if (isSyncing) {
+                if (worker) worker.terminate();
+                isSyncing = false;
+                btn.innerText = "同期を開始";
+                btn.style.background = "var(--primary-color)";
+            } else {
+                const workerCode = `
+                    let t = null;
+                    self.onmessage = function(e) {
+                        t = setInterval(async () => {
+                            try {
+                                const r = await fetch(e.data.url);
+                                if (r.ok) { const d = await r.json(); self.postMessage({ success: true, data: d }); }
+                            } catch (err) { self.postMessage({ success: false }); }
+                        }, 1000);
+                    };
+                `;
+                const blob = new Blob([workerCode], { type: 'application/javascript' });
+                worker = new Worker(URL.createObjectURL(blob));
+                worker.onmessage = function(e) {
+                    if (e.data.success && e.data.data.stationIndex !== undefined) {
+                        document.getElementById('op-current-station').value = e.data.data.stationIndex;
+                        setStatus(e.data.data.status);
+                    }
+                };
+                worker.postMessage({ url: document.getElementById('sync-url').value });
+                isSyncing = true;
+                btn.innerText = "同期中 (停止)";
+                btn.style.background = "var(--status-stopping)";
+            }
+        }
+
+        function toggleDemo() {
+            const btn = document.getElementById('btn-demo-toggle');
+            const states = ['running', 'arriving', 'stopping', 'departing'];
+            const speed = parseInt(document.getElementById('demo-speed').value) || 1;
+
+            if (isDemoMode) {
+                clearInterval(demoTimer);
+                isDemoMode = false;
+                btn.innerText = "デモモード開始";
+                btn.style.background = "#6f42c1";
+            } else {
+                isDemoMode = true;
+                btn.innerText = "デモ停止";
+                btn.style.background = "var(--status-stopping)";
+                let idx = states.indexOf(simState.status);
+                demoTimer = setInterval(() => {
+                    idx = (idx + 1) % states.length;
+                    if (states[idx] === 'running') {
+                        const sel = document.getElementById('op-current-station');
+                        let n = sel.selectedIndex + 1;
+                        if (n >= sel.options.length) n = 0;
+                        sel.selectedIndex = n;
+                    }
+                    setStatus(states[idx]);
+                }, 4000 / speed);
+            }
+        }
+    </script>
+</body>
+</html>
