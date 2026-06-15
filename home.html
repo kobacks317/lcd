@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LCD Simulator - コントロールパネル</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --panel-bg: #ffffff;
+            --primary-color: #007bff;
+            --primary-hover: #0056b3;
+            --text-color: #333333;
+            --border-color: #cccccc;
+            --status-running: #28a745;
+            --status-arriving: #ffc107;
+            --status-stopping: #dc3545;
+            --status-departing: #17a2b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            padding-bottom: 20px;
+        }
+
+        header {
+            background-color: #222;
+            color: #fff;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* タブナビゲーション（スマホ対応） */
+        .tabs {
+            display: flex;
+            background-color: #333;
+            sticky: top;
+            z-index: 100;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 5px;
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            color: #fff;
+            border-bottom-color: var(--primary-color);
+            background-color: rgba(255,255,255,0.05);
+        }
+
+        /* メインコンテンツエリア */
+        .container {
+            max-width: 800px;
+            margin: 15px auto;
+            padding: 0 15px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* パネル（カードスタイル） */
+        .panel {
+            background: var(--panel-bg);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .panel-title {
+            font-size: 1rem;
+            font-weight: bold;
+            margin-bottom: 12px;
+            border-left: 4px solid var(--primary-color);
+            padding-left: 8px;
+            color: #444;
+        }
+
+        /* フォーム要素 */
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-bottom: 4px;
+            color: #666;
+        }
+
+        select, input[type="text"], input[type="number"], url {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+            background-color: #fff;
+            -webkit-appearance: none; /* iOS対策 */
+        }
+
+        /* グリッドレイアウト（スマホ時は1カラム、PC時は2カラム等） */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 12px;
+        }
+
+        /* ボタン類 */
+        .btn {
+            display: inline-block;
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color);
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-action {
+            background-color: #6c757d;
+        }
+
+        /* 状態変更用の特殊グリッドボタン */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .btn-status {
+            padding: 15px 10px;
+            font-size: 0.95rem;
+            color: #fff;
+            border: 2px solid transparent;
+            opacity: 0.6;
+        }
+
+        .btn-status.active {
+            opacity: 1;
+            font-weight: bold;
+            box-shadow: 0 0 8px rgba(0,0,0,0.2);
+        }
+        #status-running { background-color: var(--status-running); }
+        #status-running.active { border-color: #115c24; }
+        #status-arriving { background-color: var(--status-arriving); color: #333; }
+        #status-arriving.active { border-color: #b58900; }
+        #status-stopping { background-color: var(--status-stopping); }
+        #status-stopping.active { border-color: #7c151f; }
+        #status-departing { background-color: var(--status-departing); }
+        #status-departing.active { border-color: #0f6674; }
+
+        /* JSONプレビュー等 */
+        textarea {
+            width: 100%;
+            height: 150px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            resize: vertical;
+        }
+
+        /* モニター起動エリア固定表示（スマホ用） */
+        .launcher-zone {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #222;
+            padding: 10px 15px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        
+        .body-padding {
+            padding-bottom: 70px; /* ランチャーゾーンの被り回避 */
+        }
+    </style>
+</head>
+<body class="body-padding">
+
+    <header>LCD Simulator Control</header>
+
+    <nav class="tabs">
+        <button class="tab-btn active" onclick="switchTab('tab-operation')">運行操作</button>
+        <button class="tab-btn" onclick="switchTab('tab-editor')">JSON作成</button>
+        <button class="tab-btn" onclick="switchTab('tab-sync-demo')">同期・デモ</button>
+    </nav>
+
+    <div class="container">
+        
+        <div id="tab-operation" class="tab-content active">
+            <div class="panel">
+                <div class="panel-title">基本設定</div>
+                <div class="form-group">
+                    <label>列車定義ファイル</label>
+                    <input type="file" id="file-train-json" accept=".json" onchange="loadTrainJson(event)">
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>系統</label>
+                        <select id="select-line-system"><option>※JSONを読み込んでください</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>列車種別</label>
+                        <select id="select-train-type"><option>-</option></select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">駅・運行状態</div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>現在駅 (通しインデックス)</label>
+                        <select id="select-current-station" onchange="updateStationIndex()"><option>-</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>行先 / 終着駅</label>
+                        <select id="select-terminal-station"><option>-</option></select>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top: 10px;">
+                    <label>現在の状態</label>
+                    <div class="status-grid">
+                        <button id="status-running" class="btn btn-status" onclick="setStatus('running')">走行中</button>
+                        <button id="status-arriving" class="btn btn-status" onclick="setStatus('arriving')">到着中</button>
+                        <button id="status-stopping" class="btn btn-status" onclick="setStatus('stopping')">停車中</button>
+                        <button id="status-departing" class="btn btn-status active" onclick="setStatus('departing')">発車中</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">車両・設置仕様</div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>総編成数</label>
+                        <input type="number" id="input-total-cars" value="10" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>設置車両 (自号車)</label>
+                        <input type="number" id="input-this-car" value="1" min="1">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>設置場所</label>
+                        <select id="select-position">
+                            <option value="left" selected>左 (ドア上)</option>
+                            <option value="right">右 (ドア上)</option>
+                            <option value="front">前 (妻面・進行方向向き)</option>
+                            <option value="back">後 (妻面・進行逆方向向き)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>個別カスタムJSON上書き</label>
+                        <input type="file" accept=".json" style="font-size: 0.8rem; padding: 5px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-editor" class="tab-content">
+            <div class="panel">
+                <div class="panel-title">ビジュアルエディタ (随時コンポーネント拡張)</div>
+                <p style="font-size: 0.85rem; color:#666; margin-bottom: 10px;">
+                    GUIで直感的に各JSON（列車・路線・デザイン・乗換）を構築するエリアです。
+                </p>
+                <div class="form-group">
+                    <label>編集ターゲット選択</label>
+                    <select id="editor-target">
+                        <option value="train">列車定義 JSON</option>
+                        <option value="route">路線定義 JSON</option>
+                        <option value="design">デザイン定義 JSON</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>データプレビュー</label>
+                    <textarea id="editor-preview" placeholder="ここに生成されたJSONがリアルタイムに表示されます。"></textarea>
+                </div>
+                <button class="btn btn-action" onclick="downloadJson()">JSONとしてダウンロード</button>
+            </div>
+        </div>
+
+        <div id="tab-sync-demo" class="tab-content">
+            <div class="panel">
+                <div class="panel-title">外部連携 (Web Worker同期)</div>
+                <div class="form-group">
+                    <label>同期先URL</label>
+                    <input type="text" id="sync-url" value="http://localhost:3000/status" placeholder="http://...">
+                </div>
+                <div class="grid-2">
+                    <button id="btn-sync-toggle" class="btn" onclick="toggleSync()">外部同期を有効化</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">自動デモモード</div>
+                <p style="font-size: 0.85rem; color:#666; margin-bottom: 10px;">
+                    「走行中 ➔ 到着中 ➔ 停車中 ➔ 発車中」を自動でループさせます。
+                </p>
+                <div class="form-group">
+                    <label>進行スピード倍率</label>
+                    <select id="demo-speed">
+                        <option value="1">等倍 (通常速度)</option>
+                        <option value="2">2倍速 (サクサク)</option>
+                        <option value="5">5倍速 (テスト用)</option>
+                    </select>
+                </div>
+                <button id="btn-demo-toggle" class="btn style-demo" style="background-color: #6f42c1;" onclick="toggleDemo()">デモモード開始</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="launcher-zone">
+        <button class="btn" style="background-color: #e83e8c;" onclick="openLcdWindow()">LCD表示画面 (ポップアップ) を開く</button>
+    </div>
+
+    <script>
+        // --- 状態管理オブジェクト ---
+        let simState = {
+            stationIndex: 0,
+            status: 'departing',
+            totalCars: 10,
+            thisCar: 1,
+            position: 'left',
+            lineSystemId: '',
+            trainTypeId: ''
+        };
+
+        let lcdWindow = null;
+        let worker = null;
+        let isSyncing = false;
+        let isDemoMode = false;
+        let demoTimer = null;
+
+        // --- UI初期化用ダミーデータ (ファイル選択前のプレースホルダー) ---
+        const dummyStations = ["東京 (0)", "品川 (1)", "川崎 (2)", "横浜 (3)", "大船 (4)"];
+
+        window.onload = () => {
+            initStationSelect(dummyStations);
+        };
+
+        function initStationSelect(stations) {
+            const currentSelect = document.getElementById('select-current-station');
+            const terminalSelect = document.getElementById('select-terminal-station');
+            currentSelect.innerHTML = '';
+            terminalSelect.innerHTML = '';
+            
+            stations.forEach((st, idx) => {
+                let opt1 = new Option(st, idx);
+                let opt2 = new Option(st, idx);
+                currentSelect.add(opt1);
+                terminalSelect.add(opt2);
+            });
+            terminalSelect.selectedIndex = stations.length - 1;
+        }
+
+        // --- タブ切り替えロジック ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // --- 状態変更ハンドラ ---
+        function setStatus(newStatus) {
+            simState.status = newStatus;
+            document.querySelectorAll('.btn-status').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`status-${newStatus}`).classList.add('active');
+            syncToLcd();
+        }
+
+        function updateStationIndex() {
+            simState.stationIndex = parseInt(document.getElementById('select-current-station').value);
+            syncToLcd();
+        }
+
+        // --- LCD画面（ポップアップ）制御 ---
+        function openLcdWindow() {
+            // ハーフHDや16:9に近い横長サイズでポップアップを生成
+            lcdWindow = window.open('', 'LcdMonitor', 'width=1280,height=720,menubar=no,toolbar=no,location=no,status=no');
+            
+            // 初回ポップアップ起動時に空のモックと受信体制をスクリプトで流し込む
+            if (lcdWindow) {
+                lcdWindow.document.write(`
+                    <html>
+                    <head>
+                        <title>LCD Monitor View</title>
+                        <style>
+                            body { background: #000; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: sans-serif; overflow: hidden; }
+                            #mock-display { text-align: center; border: 2px solid #333; padding: 40px; border-radius: 10px; width: 80%; }
+                            h1 { color: #007bff; margin-bottom: 20px; }
+                        </style>
+                    </head>
+                    <body>
+                        <div id="mock-display">
+                            <h1>LCD再現画面 (ポップアップ)</h1>
+                            <p>コントロールパネルからの信号を待機中...</p>
+                            <div id="data-view" style="margin-top:20px; font-family:monospace; background:#222; padding:15px; border-radius:5px;"></div>
+                        </div>
+                        <script>
+                            window.addEventListener('message', (event) => {
+                                const state = event.data;
+                                document.getElementById('data-view').innerHTML = JSON.stringify(state, null, 2);
+                            });
+                        <\/script>
+                    </body>
+                    </html>
+                `);
+                lcdWindow.document.close();
+                setTimeout(syncToLcd, 500); // 起動後の初回データ送信
+            }
+        }
+
+        // メインウィンドウからポップアップへのデータ送信（postMessage）
+        function syncToLcd() {
+            if (lcdWindow && !lcdWindow.closed) {
+                // 各入力フォームの最新パラメータをマージ
+                simState.totalCars = parseInt(document.getElementById('input-total-cars').value) || 10;
+                simState.thisCar = parseInt(document.getElementById('input-this-car').value) || 1;
+                simState.position = document.getElementById('select-position').value;
+                
+                lcdWindow.postMessage(simState, '*');
+            }
+        }
+
+        // --- Web Worker による外部URL同期ロジック ---
+        function toggleSync() {
+            const btn = document.getElementById('btn-sync-toggle');
+            const urlInput = document.getElementById('sync-url').value;
+
+            if (isSyncing) {
+                // 同期停止
+                if (worker) {
+                    worker.terminate();
+                    worker = null;
+                }
+                isSyncing = false;
+                btn.innerText = "外部同期を有効化";
+                btn.style.backgroundColor = "var(--primary-color)";
+            } else {
+                // 同期開始 (インラインでWorkerコードを生成してBlob化)
+                const workerCode = `
+                    let timer = null;
+                    self.onmessage = function(e) {
+                        const { url, interval } = e.data;
+                        if (timer) clearInterval(timer);
+                        
+                        timer = setInterval(async () => {
+                            try {
+                                const response = await fetch(url);
+                                if (response.ok) {
+                                    const data = await response.json();
+                                    self.postMessage({ success: true, data: data });
+                                }
+                            } catch (error) {
+                                self.postMessage({ success: false, error: error.message });
+                            }
+                        }, interval);
+                    };
+                `;
+
+                const blob = new Blob([workerCode], { type: 'application/javascript' });
+                worker = new Worker(URL.createObjectURL(blob));
+                
+                worker.onmessage = function(e) {
+                    if (e.data.success) {
+                        const externalData = e.data.data;
+                        // マッピング仕様に基づき反映
+                        if (externalData.stationIndex !== undefined && externalData.status !== undefined) {
+                            document.getElementById('select-current-station').value = externalData.stationIndex;
+                            simState.stationIndex = externalData.stationIndex;
+                            setStatus(externalData.status);
+                        }
+                    }
+                };
+
+                worker.postMessage({ url: urlInput, interval: 1000 });
+                isSyncing = true;
+                btn.innerText = "同期中 (クリックで停止)";
+                btn.style.backgroundColor = "var(--status-stopping)";
+            }
+        }
+
+        // --- 自動デモモード制御 ---
+        function toggleDemo() {
+            const btn = document.getElementById('btn-demo-toggle');
+            const statuses = ['running', 'arriving', 'stopping', 'departing'];
+            const speedMultiplier = parseInt(document.getElementById('demo-speed').value) || 1;
+
+            if (isDemoMode) {
+                clearInterval(demoTimer);
+                isDemoMode = false;
+                btn.innerText = "デモモード開始";
+                btn.style.backgroundColor = "#6f42c1";
+            } else {
+                isDemoMode = true;
+                btn.innerText = "デモ停止";
+                btn.style.backgroundColor = "var(--status-stopping)";
+
+                let statusIdx = statuses.indexOf(simState.status);
+                
+                demoTimer = setInterval(() => {
+                    statusIdx = (statusIdx + 1) % statuses.length;
+                    
+                    // 「発車中」から「走行中」に戻る瞬間に駅を1つ進める
+                    if (statuses[statusIdx] === 'running') {
+                        const stationSelect = document.getElementById('select-current-station');
+                        let nextIdx = stationSelect.selectedIndex + 1;
+                        if (nextIdx >= stationSelect.options.length) nextIdx = 0; // 終点に達したら最初に戻る
+                        stationSelect.selectedIndex = nextIdx;
+                        simState.stationIndex = nextIdx;
+                    }
+                    
+                    setStatus(statuses[statusIdx]);
+                }, 4000 / speedMultiplier); // 通常4秒ごとに状態変化（等倍時）
+            }
+        }
+
+        // --- JSONダミーダウンロード (エディタ用プレースホルダー) ---
+        function downloadJson() {
+            const target = document.getElementById('editor-target').value;
+            const content = document.getElementById('editor-preview').value || "{}";
+            
+            const blob = new Blob([content], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `custom_${target}_definition.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // 列車定義JSON読み込み用（骨格のみ）
+        function loadTrainJson(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    alert("列車定義を読み込みました（内部データとの紐付けをここに実装します）");
+                    // 本番ではここで駅リストを取り出して initStationSelect() を叩く
+                } catch(err) {
+                    alert("JSONのパースに失敗しました。");
+                }
+            };
+            reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>
