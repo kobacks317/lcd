@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LCD Simulator - アップデート版コントロールパネル</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --panel-bg: #ffffff;
+            --primary-color: #007bff;
+            --primary-hover: #0056b3;
+            --text-color: #333333;
+            --border-color: #cccccc;
+            
+            /* 運行状態用カラー */
+            --status-running: #28a745;
+            --status-arriving: #ffc107;
+            --status-stopping: #dc3545;
+            --status-departing: #17a2b8;
+            --status-inactive: #e2e8f0;
+            --status-inactive-text: #4a5568;
+            
+            --accent-color: #e83e8c;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.4;
+            padding-bottom: 90px;
+        }
+
+        header {
+            background-color: #222; color: #fff; padding: 12px;
+            text-align: center; font-size: 1.1rem; font-weight: bold;
+        }
+
+        /* タブバー */
+        .tabs {
+            display: flex; background-color: #333;
+            overflow-x: auto; white-space: nowrap;
+            position: sticky; top: 0; z-index: 100;
+            -webkit-overflow-scrolling: touch;
+        }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab-btn {
+            flex: 0 0 auto; padding: 12px 18px; background: none; border: none;
+            color: #aaa; font-size: 0.9rem; font-weight: bold; cursor: pointer;
+            border-bottom: 3px solid transparent; transition: all 0.2s;
+        }
+        .tab-btn.active {
+            color: #fff; border-bottom-color: var(--primary-color);
+            background-color: rgba(255,255,255,0.05);
+        }
+
+        .container { max-width: 1000px; margin: 15px auto; padding: 0 12px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .panel {
+            background: var(--panel-bg); border-radius: 8px; padding: 15px;
+            margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .panel-title {
+            font-size: 0.95rem; font-weight: bold; margin-bottom: 12px;
+            border-left: 4px solid var(--primary-color); padding-left: 8px;
+            color: #444; display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 3px; color: #666; }
+        
+        /* 5言語入力グリッド */
+        .lang-grid {
+            display: grid; grid-template-columns: repeat(5, 1fr);
+            gap: 4px; background: #f8f9fa; padding: 6px; border-radius: 6px; border: 1px dashed #ddd;
+            margin-bottom: 4px;
+        }
+        .lang-grid div { display: flex; flex-direction: column; }
+        .lang-grid label { font-size: 0.7rem; color: #888; margin-bottom: 1px; }
+
+        select, input[type="text"], input[type="number"], input[type="color"] {
+            width: 100%; padding: 8px; border: 1px solid var(--border-color);
+            border-radius: 4px; font-size: 0.9rem; background-color: #fff;
+        }
+        input[type="color"] { height: 38px; padding: 2px; }
+        input[type="checkbox"] { transform: scale(1.1); margin-right: 4px; vertical-align: middle; }
+
+        /* 運行状態ボタンの1行配置化・非選択色統一 */
+        .status-flex { display: flex; gap: 6px; width: 100%; }
+        .btn-status {
+            flex: 1; padding: 12px 6px; font-size: 0.85rem; border: none; border-radius: 4px;
+            cursor: pointer; font-weight: bold; transition: all 0.2s;
+            background-color: var(--status-inactive);
+            color: var(--status-inactive-text);
+        }
+        .btn-status.active#status-running { background-color: var(--status-running); color: #fff; }
+        .btn-status.active#status-arriving { background-color: var(--status-arriving); color: #333; }
+        .btn-status.active#status-stopping { background-color: var(--status-stopping); color: #fff; }
+        .btn-status.active#status-departing { background-color: var(--status-departing); color: #fff; }
+
+        /* テーブルUI */
+        .table-responsive { width: 100%; overflow-x: auto; margin-top: 10px; border: 1px solid #dee2e6; border-radius: 6px; }
+        .station-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; min-width: 800px; }
+        .station-table th, .station-table td { padding: 8px; border-bottom: 1px solid #dee2e6; vertical-align: top; }
+        .station-table th { background: #f1f3f5; font-weight: bold; color: #495057; }
+
+        /* 臨時制御専用全駅リストテーブル */
+        .override-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .override-table th, .override-table td { padding: 6px 10px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+        .override-table th { background: #edf2f7; color: #4a5568; }
+
+        .nested-card { background: #fdfdfd; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin-top: 6px; margin-bottom: 6px; }
+        .nested-title { font-size: 0.8rem; font-weight: bold; color: #4a5568; margin-bottom: 6px; background: #edf2f7; padding: 4px; border-radius: 4px; }
+
+        .btn { display: inline-block; width: 100%; padding: 10px; background-color: var(--primary-color); color: #fff; border: none; border-radius: 4px; font-size: 0.9rem; font-weight: bold; cursor: pointer; text-align: center; }
+        .btn:hover { background-color: var(--primary-hover); }
+        .btn-sm { padding: 4px 8px; font-size: 0.75rem; width: auto; }
+        .btn-danger { background-color: var(--status-stopping); }
+        .btn-success { background-color: var(--status-running); }
+
+        .source-manager { background: #e9ecef; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 0.85rem; }
+        .launcher-zone { position: fixed; bottom: 0; left: 0; right: 0; background: #222; padding: 10px; z-index: 1000; }
+    </style>
+</head>
+<body>
+
+    <header>LCD Simulator 高度統合マスターパネル</header>
+
+    <nav class="tabs" id="main-tabs">
+        <button class="tab-btn active" onclick="switchTab('tab-operation')">運行操作・全駅臨時制御</button>
+        <button class="tab-btn" onclick="switchTab('tab-train-editor')">列車・系統定義</button>
+        <button class="tab-btn" onclick="switchTab('tab-route-editor')">路線定義 (表)</button>
+        <button class="tab-btn" onclick="switchTab('tab-transfer-editor')">乗換路線定義</button>
+        <button class="tab-btn" onclick="switchTab('tab-design-editor')">デザイン定義</button>
+    </nav>
+
+    <div class="container">
+        
+        <div id="tab-operation" class="tab-content active">
+            <div class="panel">
+                <div class="panel-title">シミュレーションライブ操作</div>
+                <div class="form-group">
+                    <label>系統（路線定義の組み合わせ）</label>
+                    <select id="op-line-system" onchange="syncRouteMetadata()"></select>
+                </div>
+                <div class="form-group">
+                    <label>列車種別</label>
+                    <select id="op-train-type" onchange="syncToLcd()"></select>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div class="form-group"><label>始発駅</label><select id="op-start-station"></select></div>
+                    <div class="form-group"><label>終着駅</label><select id="op-terminal-station"></select></div>
+                </div>
+                <div class="form-group"><label>現在駅</label><select id="op-current-station" onchange="syncToLcd()"></select></div>
+                
+                <div class="form-group">
+                    <label>運行状態</label>
+                    <div class="status-flex">
+                        <button id="status-running" class="btn-status" onclick="setStatus('running')">走行中</button>
+                        <button id="status-arriving" class="btn-status" onclick="setStatus('arriving')">到着中</button>
+                        <button id="status-stopping" class="btn-status" onclick="setStatus('stopping')">停車中</button>
+                        <button id="status-departing" class="btn-status active" onclick="setStatus('departing')">発車中</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">選択系統内 全駅個別・臨時制御マトリクス</div>
+                <p style="font-size:0.75rem; color:#666; margin-bottom:8px;">※ダイヤ乱れ等による臨時停車・臨時通過・番線変更を全駅個別にリアルタイム上書き設定できます。</p>
+                <div class="table-responsive">
+                    <table class="override-table">
+                        <thead>
+                            <tr>
+                                <th>通し順</th>
+                                <th>駅名 (所属路線)</th>
+                                <th style="text-align:center;">臨時停車</th>
+                                <th style="text-align:center;">臨時通過</th>
+                                <th>個別指定番線 (空欄時はデフォルト)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="op-all-stations-override-body">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-train-editor" class="tab-content">
+            <div class="panel">
+                <div class="panel-title">基本メタデータ</div>
+                <div class="form-group"><label>デザイン定義JSON参照パス</label><input type="text" id="tr-design-path" value="design/default.json"></div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">系統リスト（5言語対応） <button class="btn btn-sm btn-success" onclick="autoAddTrainSystem()">+ 系統を自動追加</button></div>
+                <div id="train-systems-list"></div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">種別リスト（5言語対応） <button class="btn btn-sm btn-success" onclick="autoAddTrainType()">+ 種別を自動追加</button></div>
+                <div id="train-types-list"></div>
+            </div>
+            <button class="btn btn-success" onclick="exportJson('train')">列車定義JSONを書き出し (DL)</button>
+        </div>
+
+        <div id="tab-route-editor" class="tab-content">
+            <div class="source-manager">
+                <div class="form-group">
+                    <label>現在エディタで編集する路線JSONファイル</label>
+                    <select id="route-file-selector" onchange="switchRouteFile()"></select>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">駅構成エディタ（表形式） <button class="btn btn-sm btn-success" onclick="autoAddTableRowStation()">+ 駅を最後尾に自動追加</button></div>
+                <div class="table-responsive">
+                    <table class="station-table" id="route-table">
+                        <thead>
+                            <tr>
+                                <th style="width:85px;">操作 / ID</th>
+                                <th>駅名（漢字入力➔5言語自動完全同期・編集対応）</th>
+                                <th style="width:100px;">ナンバリング</th>
+                                <th>詳細構成（停車時間・乗換・ホーム案内）</th>
+                            </tr>
+                        </thead>
+                        <tbody id="route-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            <button class="btn btn-success" onclick="exportJson('route')">現在選択中の路線定義JSONを書き出し (DL)</button>
+        </div>
+
+        <div id="tab-transfer-editor" class="tab-content">
+            <div class="panel">
+                <div class="panel-title">乗換路線マスターデータエディタ <button class="btn btn-sm btn-success" onclick="autoAddTransferLine()">+ 乗換路線を自動追加</button></div>
+                <p style="font-size:0.75rem; color:#666; margin-bottom:8px;">駅詳細設定の「接続乗換路線ID」と紐づくマスターデータ群です。</p>
+                <div class="table-responsive">
+                    <table class="station-table">
+                        <thead>
+                            <tr>
+                                <th style="width:100px;">乗換ID</th>
+                                <th>乗換路線名（5言語対応）</th>
+                                <th style="width:180px;">路線アイコンファイル名 / クラス</th>
+                                <th style="width:60px;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transfer-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            <button class="btn btn-success" onclick="exportJson('transfer')">乗換路線定義JSONを書き出し (DL)</button>
+        </div>
+
+        <div id="tab-design-editor" class="tab-content">
+            <div class="panel">
+                <div class="panel-title">基本レイアウト構造</div>
+                <div class="form-group"><label>メインエリアHTMLパス</label><input type="text" id="ds-main-html-path" value="main/pattern1.html"></div>
+            </div>
+            <div class="panel">
+                <div class="panel-title">状態毎のインフォメーションエリアスライドショー</div>
+                <div id="design-status-container"></div>
+            </div>
+            <button class="btn btn-success" onclick="exportJson('design')">デザイン定義JSONを書き出し (DL)</button>
+        </div>
+
+    </div>
+
+    <div class="launcher-zone">
+        <button class="btn" style="background: var(--accent-color);" onclick="openLcdWindow()">LCDビューア画面 (ポップアップ) を開く</button>
+    </div>
+
+    <script>
+        // --- メモリ上コアデータストア ---
+        let globalTrainData = { designPath: "design/default.json", systems: [], types: [] };
+        let globalRoutes = { "route/line1.json": { stations: [] } };
+        let globalTransferData = { lines: [] };
+        let globalDesignData = { mainPath: "main/pattern1.html", infoList: { running: [], arriving: [], stopping: [], departing: [] } };
+        
+        let currentRouteFile = "route/line1.json";
+        let simState = { status: 'departing', overrides: {} }; // 駅個別個別臨時情報を格納
+        let lcdWindow = null;
+
+        // 連番自動生成用カウンター
+        let counters = { sys: 1, typ: 1, sta: 1, rte: 1, trf: 1 };
+
+        window.onload = () => {
+            setupInitialPresets();
+            renderAllEditors();
+            buildDesignEditor();
+        };
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+            if(btn) btn.classList.add('active');
+        }
+
+        function setStatus(status) {
+            simState.status = status;
+            document.querySelectorAll('.btn-status').forEach(b => b.classList.remove('active'));
+            document.getElementById(`status-${status}`).classList.add('active');
+            syncToLcd();
+        }
+
+        // --- 超連動多言語自動翻訳ロジック（ひらがな修正トリガー対応） ---
+        // 簡易かな➔ローマ字ヘボン式変換マップ
+        function kanaToHepburn(kana) {
+            if (!kana) return "";
+            const rowMap = {
+                'あ':'a','い':'i','う':'u','え':'e','お':'o',
+                'か':'ka','き':'ki','く':'ku','け':'ke','こ':'ko',
+                'さ':'sa','し':'shi','す':'su','せ':'se','そ':'so',
+                'た':'ta','ち':'chi','つ':'tsu','て':'te','と':'to',
+                'な':'na','に':'ni','ぬ':'nu','ね':'ne','の':'no',
+                'は':'ha','ひ':'hi','ふ':'fu','へ':'he','ほ':'ho',
+                'ま':'ma','み':'mi','む':'mu','め':'me','も':'mo',
+                'や':'ya','ゆ':'yu','よ':'yo',
+                'ら':'ra','り':'ri','る':'ru','れ':'re','ろ':'ro',
+                'わ':'wa','を':'o','ん':'n',
+                'が':'ga','ぎ':'gi','ぐ':'gu','げ':'ge','ご':'go',
+                'ざ':'za','じ':'ji','ず':'zu','ぜ':'ze','ぞ':'zo',
+                'だ':'da','ぢ':'ji','づ':'zu','で':'de','ど':'do',
+                'ば':'ba','び':'bi','ぶ':'bu','べ':'be','ぼ':'bo',
+                'ぱ':'pa','ぴ':'pi','ぷ':'pu','ぺ':'pe','ぽ':'po',
+                'っ':'t','ー':''
+            };
+            let res = "";
+            for(let i=0; i<kana.length; i++) {
+                res += rowMap[kana[i]] || kana[i];
+            }
+            return res.charAt(0).toUpperCase() + res.slice(1);
+        }
+
+        // 漢字が入力された時：ひとまず「かな」とその他を仮生成
+        function handleKanjiInput(el, targetObj) {
+            const val = el.value;
+            targetObj.nameJa = val;
+            
+            // まだ「かな」が未入力なら、漢字をそのまま仮入れして多言語展開
+            if(!targetObj.nameKana) {
+                targetObj.nameKana = val;
+            }
+            regenerateForeignLanguages(targetObj);
+            refreshCurrentTabView();
+        }
+
+        // 「ひらがな」が直接入力・修正された時：このイベントから100%英中韓を再ビルド
+        function handleKanaInput(el, targetObj) {
+            targetObj.nameKana = el.value;
+            regenerateForeignLanguages(targetObj);
+            refreshCurrentTabView();
+        }
+
+        function regenerateForeignLanguages(obj) {
+            const k = obj.nameKana || "";
+            const j = obj.nameJa || "";
+            // ひらがなをベースにヘボン式英字を構成
+            obj.nameEn = kanaToHepburn(k);
+            obj.nameZh = j ? j + "(中文)" : "";
+            obj.nameKo = k ? k + "(한국어)" : "";
+        }
+
+        function refreshCurrentTabView() {
+            // 入力中のフォーカス外れを防ぐため、データバインドのみ、または最小限の部分描画を維持
+            updateOperationSelectors();
+        }
+
+
+        // --- 2. 列車・系統定義エディタ（5言語・自動ID） ---
+        function renderTrainSystems() {
+            const container = document.getElementById('train-systems-list');
+            container.innerHTML = '';
+            globalTrainData.systems.forEach((sys, index) => {
+                const div = document.createElement('div');
+                div.className = 'nested-card';
+                div.innerHTML = `
+                    <div style="margin-bottom:8px;">
+                        <span style="font-size:0.75rem; font-weight:bold; color:var(--accent-color);">ID: ${sys.id}</span>
+                        <div class="lang-grid">
+                            <div><label>日</label><input type="text" value="${sys.nameJa||''}" oninput="handleKanjiInput(this, globalTrainData.systems[${index}])"></div>
+                            <div><label>かな</label><input type="text" value="${sys.nameKana||''}" oninput="handleKanaInput(this, globalTrainData.systems[${index}])"></div>
+                            <div><label>英</label><input type="text" value="${sys.nameEn||''}" onchange="globalTrainData.systems[${index}].nameEn=this.value;"></div>
+                            <div><label>中</label><input type="text" value="${sys.nameZh||''}" onchange="globalTrainData.systems[${index}].nameZh=this.value;"></div>
+                            <div><label>韓</label><input type="text" value="${sys.nameKo||''}" onchange="globalTrainData.systems[${index}].nameKo=this.value;"></div>
+                        </div>
+                    </div>
+                    <div class="nested-title">内包する路線定義のスタック（直通順） <button class="btn btn-sm btn-success" onclick="autoAddRouteToSystem(${index})">+ 路線を自動追加</button></div>
+                    <div id="sys-routes-${index}"></div>
+                    <button class="btn btn-sm btn-danger" style="margin-top:5px;" onclick="globalTrainData.systems.splice(${index},1); renderTrainSystems(); updateOperationSelectors();">この系統を削除</button>
+                `;
+                container.appendChild(div);
+                renderSystemRouteList(index);
+            });
+        }
+
+        function renderSystemRouteList(sysIndex) {
+            const container = document.getElementById(`sys-routes-${sysIndex}`);
+            container.innerHTML = '';
+            globalTrainData.systems[sysIndex].routes.forEach((rt, rIdx) => {
+                const d = document.createElement('div');
+                d.style = "display:grid; grid-template-columns:1.5fr 2fr 1fr 1fr auto; gap:4px; margin-bottom:4px; background:#fff; padding:4px; border:1px solid #ddd;";
+                d.innerHTML = `
+                    <input type="text" placeholder="路線名" value="${rt.nameJa || ''}" onchange="globalTrainData.systems[${sysIndex}].routes[${rIdx}].nameJa=this.value;">
+                    <input type="text" placeholder="jsonパス" value="${rt.jsonPath || ''}" onchange="globalTrainData.systems[${sysIndex}].routes[${rIdx}].jsonPath=this.value; updateRouteFileSelector();">
+                    <input type="color" value="${rt.color || '#007bff'}" onchange="globalTrainData.systems[${sysIndex}].routes[${rIdx}].color=this.value; syncToLcd();">
+                    <select onchange="globalTrainData.systems[${sysIndex}].routes[${rIdx}].textColor=this.value; syncToLcd();"><option value="white" ${rt.textColor==='white'?'selected':''}>白</option><option value="black" ${rt.textColor==='black'?'selected':''}>黒</option></select>
+                    <button class="btn btn-sm btn-danger" onclick="globalTrainData.systems[${sysIndex}].routes.splice(${rIdx},1); renderSystemRouteList(${sysIndex}); updateRouteFileSelector();">X</button>
+                `;
+                container.appendChild(d);
+            });
+        }
+
+        function autoAddTrainSystem() {
+            const id = "sys" + String(counters.sys++).padStart(3, '0');
+            globalTrainData.systems.push({ id: id, nameJa: "", nameKana: "", nameEn: "", nameZh: "", nameKo: "", routes: [] });
+            renderTrainSystems();
+            updateOperationSelectors();
+        }
+
+        function autoAddRouteToSystem(sysIndex) {
+            const idNum = counters.rte++;
+            const path = `route/line_${idNum}.json`;
+            const newRoute = { nameJa: `新路線_${idNum}`, jsonPath: path, color: "#007bff", textColor: "white" };
+            
+            globalTrainData.systems[sysIndex].routes.push(newRoute);
+            if(!globalRoutes[path]) {
+                globalRoutes[path] = { stations: [] };
+            }
+            renderSystemRouteList(sysIndex);
+            updateRouteFileSelector();
+        }
+
+        function renderTrainTypes() {
+            const container = document.getElementById('train-types-list');
+            container.innerHTML = '';
+            globalTrainData.types.forEach((t, index) => {
+                const div = document.createElement('div');
+                div.className = 'nested-card';
+                div.innerHTML = `
+                    <div style="margin-bottom:6px;">
+                        <span style="font-size:0.75rem; font-weight:bold; color:var(--accent-color);">種別ID: ${t.id}</span>
+                        <div class="lang-grid">
+                            <div><label>日</label><input type="text" value="${t.nameJa||''}" oninput="handleKanjiInput(this, globalTrainData.types[${index}])"></div>
+                            <div><label>かな</label><input type="text" value="${t.nameKana||''}" oninput="handleKanaInput(this, globalTrainData.types[${index}])"></div>
+                            <div><label>英</label><input type="text" value="${t.nameEn||''}" onchange="globalTrainData.types[${index}].nameEn=this.value;"></div>
+                            <div><label>中</label><input type="text" value="${t.nameZh||''}" onchange="globalTrainData.types[${index}].nameZh=this.value;"></div>
+                            <div><label>韓</label><input type="text" value="${t.nameKo||''}" onchange="globalTrainData.types[${index}].nameKo=this.value;"></div>
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:10px; align-items:center;">
+                        <div><label style="font-size:0.75rem;">背景色</label><input type="color" value="${t.bg}" onchange="globalTrainData.types[${index}].bg=this.value; syncToLcd();"></div>
+                        <div><label style="font-size:0.75rem;">文字色</label><input type="color" value="${t.fg}" onchange="globalTrainData.types[${index}].fg=this.value; syncToLcd();"></div>
+                        <div><label style="font-size:0.75rem;">文字輪郭色</label><input type="color" value="${t.stroke}" onchange="globalTrainData.types[${index}].stroke=this.value; syncToLcd();"></div>
+                        <button class="btn btn-sm btn-danger" style="margin-top:15px;" onclick="globalTrainData.types.splice(${index},1); renderTrainTypes(); updateOperationSelectors();">削除</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function autoAddTrainType() {
+            const id = "typ" + String(counters.typ++).padStart(3, '0');
+            globalTrainData.types.push({ id: id, nameJa: "", nameKana: "", nameEn: "", nameZh: "", nameKo: "", bg: "#000000", fg: "#ffffff", stroke: "#ffffff" });
+            renderTrainTypes();
+            updateOperationSelectors();
+        }
+
+
+        // --- 3. 路線定義エディタ（完全表形式・多言語完全同期対応） ---
+        function renderRouteTable() {
+            const tbody = document.getElementById('route-table-body');
+            tbody.innerHTML = '';
+            const routeData = globalRoutes[currentRouteFile];
+            if(!routeData) return;
+
+            routeData.stations.forEach((st, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>
+                        <strong style="font-size:0.75rem;color:#333;">${st.id}</strong><br>
+                        <button class="btn btn-sm btn-danger" style="padding:2px 4px;margin-top:8px;" onclick="globalRoutes['${currentRouteFile}'].stations.splice(${index},1); renderRouteTable(); updateOperationSelectors();">削除</button>
+                    </td>
+                    <td>
+                        <div class="lang-grid">
+                            <div><label>漢字</label><input type="text" class="st-ja" value="${st.nameJa || ''}" oninput="handleKanjiInput(this, globalRoutes['${currentRouteFile}'].stations[${index}])"></div>
+                            <div><label>かな</label><input type="text" class="st-kana" value="${st.nameKana || ''}" oninput="handleKanaInput(this, globalRoutes['${currentRouteFile}'].stations[${index}]); renderRouteTable();"></div>
+                            <div><label>English</label><input type="text" value="${st.nameEn || ''}" onchange="globalRoutes['${currentRouteFile}'].stations[${index}].nameEn=this.value;"></div>
+                            <div><label>中文</label><input type="text" value="${st.nameZh || ''}" onchange="globalRoutes['${currentRouteFile}'].stations[${index}].nameZh=this.value;"></div>
+                            <div><label>한국어</label><input type="text" value="${st.nameKo || ''}" onchange="globalRoutes['${currentRouteFile}'].stations[${index}].nameKo=this.value;"></div>
+                        </div>
+                    </td>
+                    <td>
+                        <input type="text" value="${st.number || ''}" placeholder="例: JY-01" onchange="globalRoutes['${currentRouteFile}'].stations[${index}].number=this.value; syncToLcd();">
+                    </td>
+                    <td>
+                        <button class="btn btn-sm" style="background:#4a5568;" onclick="toggleAccordion('detail-area-${index}')">構成詳細データ展開</button>
+                        <div id="detail-area-${index}" style="display:none; margin-top:8px; border-top:1px solid #ddd; padding-top:5px;">
+                            <div class="nested-title">種別毎所要時間 (通過は空欄/null)</div>
+                            <div id="st-type-times-${index}"></div>
+                            
+                            <div class="nested-title">接続乗換路線ID</div>
+                            <div id="st-transfers-${index}"></div>
+                            <button class="btn btn-sm btn-success" style="margin-bottom:6px;" onclick="autoAddTransferToStation(${index})">+ 乗換路線リンク枠追加</button>
+
+                            <div class="nested-title">ホーム案内リスト <button class="btn btn-sm btn-success" onclick="autoAddHomeGuidance(${index})">+ 案内面を追加</button></div>
+                            <div id="st-homeguide-${index}"></div>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+                buildStationNestedFields(index, st);
+            });
+        }
+
+        function autoAddTableRowStation() {
+            const id = "sta" + String(counters.sta++).padStart(3, '0');
+            const routeData = globalRoutes[currentRouteFile];
+            if(routeData) {
+                routeData.stations.push({ id: id, nameJa: "", nameKana: "", nameEn: "", nameZh: "", nameKo: "", number: "", typeTimes: {}, transfers: [], homeGuides: [] });
+                renderRouteTable();
+                updateOperationSelectors();
+            }
+        }
+
+        function buildStationNestedFields(stIdx, stData) {
+            const timeContainer = document.getElementById(`st-type-times-${stIdx}`);
+            timeContainer.innerHTML = '';
+            globalTrainData.types.forEach(t => {
+                const val = stData.typeTimes[t.id] !== undefined ? stData.typeTimes[t.id] : "";
+                const d = document.createElement('div');
+                d.style = "display:inline-block; margin-right:8px; font-size:0.75rem;";
+                d.innerHTML = `
+                    <label>${t.nameJa || t.id}: </label>
+                    <input type="number" style="width:65px; padding:2px;" value="${val}" onchange="globalRoutes['${currentRouteFile}'].stations[${stIdx}].typeTimes['${t.id}']=this.value===''?null:parseInt(this.value); syncToLcd();">
+                `;
+                timeContainer.appendChild(d);
+            });
+
+            const transContainer = document.getElementById(`st-transfers-${stIdx}`);
+            transContainer.innerHTML = '';
+            stData.transfers.forEach((trId, trIdx) => {
+                const span = document.createElement('span');
+                span.style = "display:inline-flex; align-items:center; background:#e2e8f0; padding:2px; border-radius:4px; margin-right:4px; margin-bottom:4px;";
+                span.innerHTML = `
+                    <input type="text" style="width:80px; border:none; background:none; font-size:0.75rem;" value="${trId}" onchange="globalRoutes['${currentRouteFile}'].stations[${stIdx}].transfers[${trIdx}]=this.value; syncToLcd();">
+                    <button style="border:none; background:none; color:red; margin-left:2px; cursor:pointer;" onclick="globalRoutes['${currentRouteFile}'].stations[${stIdx}].transfers.splice(${trIdx},1); buildStationNestedFields(${stIdx}, globalRoutes['${currentRouteFile}'].stations[${stIdx}]); syncToLcd();">x</button>
+                `;
+                transContainer.appendChild(span);
+            });
+
+            const homeContainer = document.getElementById(`st-homeguide-${stIdx}`);
+            homeContainer.innerHTML = '';
+            if(!stData.homeGuides) stData.homeGuides = [];
+            stData.homeGuides.forEach((hg, hgIdx) => {
+                const card = document.createElement('div');
+                card.style = "border:1px dashed #cbd5e0; padding:6px; margin-bottom:4px; background:#fff; font-size:0.75rem;";
+                card.innerHTML = `
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px; margin-bottom:4px;">
+                        <input type="text" placeholder="番線ID" value="${hg.trackId||''}" onchange="globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].trackId=this.value; syncToLcd();">
+                        <input type="text" placeholder="ホーム長" value="${hg.length||''}" onchange="globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].length=this.value; syncToLcd();">
+                        <input type="text" placeholder="停車位置" value="${hg.stopPosition||''}" onchange="globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].stopPosition=this.value; syncToLcd();">
+                    </div>
+                    <div class="nested-title" style="font-size:0.7rem;">要素パーツ <button class="btn btn-sm btn-success" style="padding:1px 3px;" onclick="autoAddHomeElement(${stIdx}, ${hgIdx})">+</button></div>
+                    <div id="hg-elements-${stIdx}-${hgIdx}"></div>
+                    <button class="btn btn-sm btn-danger" style="padding:1px 4px;margin-top:2px;" onclick="globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides.splice(${hgIdx},1); buildStationNestedFields(${stIdx}, globalRoutes['${currentRouteFile}'].stations[${stIdx}]); syncToLcd();">削除</button>
+                `;
+                homeContainer.appendChild(card);
+                renderHomeElements(stIdx, hgIdx, hg.elements || []);
+            });
+        }
+
+        function renderHomeElements(stIdx, hgIdx, elements) {
+            const cont = document.getElementById(`hg-elements-${stIdx}-${hgIdx}`);
+            cont.innerHTML = '';
+            elements.forEach((el, elIdx) => {
+                const d = document.createElement('div');
+                d.style = "display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr auto; gap:2px; margin-bottom:2px;";
+                d.innerHTML = `
+                    <input type="text" placeholder="class" value="${el.cssClass||''}" onchange="globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].elements[${elIdx}].cssClass=this.value;">
+                    <input type="text" placeholder="html" value="${el.html||''}" onchange="globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].elements[${elIdx}].html=this.value;">
+                    <input type="text" placeholder="img" value="${el.imgSrc||''}" onchange="globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].elements[${elIdx}].imgSrc=this.value;">
+                    <input type="text" placeholder="X,Y" value="${el.x||0},${el.y||0}" onchange="const p=this.value.split(','); globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].elements[${elIdx}].x=parseInt(p[0]||0); globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].elements[${elIdx}].y=parseInt(p[1]||0); syncToLcd();">
+                    <input type="text" placeholder="W,H" value="${el.w||0},${el.h||0}" onchange="const p=this.value.split(','); globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].elements[${elIdx}].w=parseInt(p[0]||0); globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].elements[${elIdx}].h=parseInt(p[1]||0); syncToLcd();">
+                    <button class="btn btn-sm btn-danger" onclick="globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].elements.splice(${elIdx},1); buildStationNestedFields(${stIdx},globalRoutes['${currentRouteFile}'].stations[${stIdx}]); syncToLcd();">X</button>
+                `;
+                cont.appendChild(d);
+            });
+        }
+
+        function autoAddTransferToStation(idx) {
+            globalRoutes[currentRouteFile].stations[idx].transfers.push("trf_link");
+            buildStationNestedFields(idx, globalRoutes[currentRouteFile].stations[idx]);
+        }
+
+        function autoAddHomeGuidance(idx) {
+            globalRoutes[currentRouteFile].stations[idx].homeGuides.push({ trackId: "1", length: "10両", stopPosition: "前寄り", elements: [] });
+            buildStationNestedFields(idx, globalRoutes[currentRouteFile].stations[idx]);
+        }
+
+        function autoAddHomeElement(stIdx, hgIdx) {
+            if(!globalRoutes[currentRouteFile].stations[stIdx].homeGuides[hgIdx].elements) globalRoutes[currentRouteFile].stations[stIdx].homeGuides[hgIdx].elements = [];
+            globalRoutes[currentRouteFile].stations[stIdx].homeGuides[hgIdx].elements.push({ cssClass: "", html: "", imgSrc: "", x:0, y:0, w:50, h:50 });
+            buildStationNestedFields(stIdx, globalRoutes[currentRouteFile].stations[stIdx]);
+        }
+
+        function toggleAccordion(id) {
+            const el = document.getElementById(id);
+            el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function updateRouteFileSelector() {
+            const selector = document.getElementById('route-file-selector');
+            const val = selector.value || currentRouteFile;
+            selector.innerHTML = '';
+            Object.keys(globalRoutes).forEach(path => {
+                selector.add(new Option(path, path));
+            });
+            selector.value = globalRoutes[val] ? val : Object.keys(globalRoutes)[0];
+            currentRouteFile = selector.value;
+        }
+
+        function switchRouteFile() {
+            currentRouteFile = document.getElementById('route-file-selector').value;
+            renderRouteTable();
+        }
+
+
+        // --- 4. 乗換路線定義エディタ（新規独立タブ） ---
+        function renderTransferEditor() {
+            const tbody = document.getElementById('transfer-table-body');
+            tbody.innerHTML = '';
+            globalTransferData.lines.forEach((line, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong style="color:var(--accent-color); font-size:0.75rem;">${line.id}</strong></td>
+                    <td>
+                        <div class="lang-grid">
+                            <div><label>日</label><input type="text" value="${line.nameJa||''}" oninput="handleKanjiInput(this, globalTransferData.lines[${index}])"></div>
+                            <div><label>かな</label><input type="text" value="${line.nameKana||''}" oninput="handleKanaInput(this, globalTransferData.lines[${index}]); renderTransferEditor();"></div>
+                            <div><label>英</label><input type="text" value="${line.nameEn||''}" onchange="globalTransferData.lines[${index}].nameEn=this.value;"></div>
+                            <div><label>中</label><input type="text" value="${line.nameZh||''}" onchange="globalTransferData.lines[${index}].nameZh=this.value;"></div>
+                            <div><label>韓</label><input type="text" value="${line.nameKo||''}" onchange="globalTransferData.lines[${index}].nameKo=this.value;"></div>
+                        </div>
+                    </td>
+                    <td>
+                        <input type="text" value="${line.icon || ''}" placeholder="例: icon-yamanote.png" onchange="globalTransferData.lines[${index}].icon=this.value; syncToLcd();">
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="globalTransferData.lines.splice(${index},1); renderTransferEditor();">削除</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function autoAddTransferLine() {
+            const id = "trf" + String(counters.trf++).padStart(3, '0');
+            globalTransferData.lines.push({ id: id, nameJa: "", nameKana: "", nameEn: "", nameZh: "", nameKo: "", icon: "" });
+            renderTransferEditor();
+        }
+
+
+        // --- 5. デザイン定義エディタ ---
+        function buildDesignEditor() {
+            const container = document.getElementById('design-status-container');
+            container.innerHTML = '';
+            const states = ['running', 'arriving', 'stopping', 'departing'];
+            const stateLabels = { running: '走行中', arriving: '到着中', stopping: '停車中', departing: '発車中' };
+
+            states.forEach(stKey => {
+                const div = document.createElement('div');
+                div.className = 'nested-card';
+                div.innerHTML = `
+                    <div class="nested-title">${stateLabels[stKey]}の演出スタック <button class="btn btn-sm btn-success" onclick="addDesignHtmlRow('${stKey}')">+ 動的HTMLを追加</button></div>
+                    <div id="ds-stack-${stKey}"></div>
+                `;
+                container.appendChild(div);
+                renderDesignStateStack(stKey);
+            });
+        }
+
+        function renderDesignStateStack(stKey) {
+            const box = document.getElementById(`ds-stack-${stKey}`);
+            box.innerHTML = '';
+            globalDesignData.infoList[stKey].forEach((item, index) => {
+                const d = document.createElement('div');
+                d.style = "display:grid; grid-template-columns:3fr 1fr auto; gap:5px; margin-bottom:4px;";
+                d.innerHTML = `
+                    <input type="text" value="${item.path || ''}" onchange="globalDesignData.infoList['${stKey}'][${index}].path=this.value;">
+                    <input type="number" value="${item.sec || 5}" onchange="globalDesignData.infoList['${stKey}'][${index}].sec=parseFloat(this.value);">
+                    <button class="btn btn-sm btn-danger" onclick="globalDesignData.infoList['${stKey}'].splice(${index},1); renderDesignStateStack('${stKey}');">X</button>
+                `;
+                box.appendChild(d);
+            });
+        }
+
+        function addDesignHtmlRow(stKey) {
+            globalDesignData.infoList[stKey].push({ path: "info/layout_default.html", sec: 5 });
+            renderDesignStateStack(stKey);
+        }
+
+
+        // --- 運行操作系の同期・全駅個別臨時制御レンダリング ---
+        function updateOperationSelectors() {
+            const systemSel = document.getElementById('op-line-system');
+            const prevSys = systemSel.value;
+            systemSel.innerHTML = '';
+            globalTrainData.systems.forEach(sys => {
+                systemSel.add(new Option(sys.nameJa || sys.id, sys.id));
+            });
+            if(globalTrainData.systems.some(s => s.id === prevSys)) systemSel.value = prevSys;
+
+            const typeSel = document.getElementById('op-train-type');
+            const prevType = typeSel.value;
+            typeSel.innerHTML = '';
+            globalTrainData.types.forEach(t => {
+                typeSel.add(new Option(t.nameJa || t.id, t.id));
+            });
+            if(globalTrainData.types.some(t => t.id === prevType)) typeSel.value = prevType;
+
+            syncTrainMetadata();
+        }
+
+        function syncTrainMetadata() {
+            const currentSysId = document.getElementById('op-line-system').value;
+            const sysData = globalTrainData.systems.find(s => s.id === currentSysId);
+            
+            const currentStationSel = document.getElementById('op-current-station');
+            const startStationSel = document.getElementById('op-start-station');
+            const termStationSel = document.getElementById('op-terminal-station');
+            
+            const pCur = currentStationSel.value;
+            const pStart = startStationSel.value;
+            const pTerm = termStationSel.value;
+
+            currentStationSel.innerHTML = '';
+            startStationSel.innerHTML = '';
+            termStationSel.innerHTML = '';
+
+            let flatStations = [];
+
+            if(sysData && sysData.routes) {
+                sysData.routes.forEach(r => {
+                    const rData = globalRoutes[r.jsonPath];
+                    if(rData && rData.stations) {
+                        rData.stations.forEach(st => {
+                            flatStations.push({ ...st, routeName: r.nameJa });
+                        });
+                    }
+                });
+            }
+
+            flatStations.forEach((st, idx) => {
+                const label = `${st.nameJa || '未命名'} [${st.routeName}] (${idx})`;
+                currentStationSel.add(new Option(label, idx));
+                startStationSel.add(new Option(label, idx));
+                termStationSel.add(new Option(label, idx));
+            });
+
+            if(flatStations[pCur]) currentStationSel.value = pCur;
+            if(flatStations[pStart]) startStationSel.value = pStart;
+            if(flatStations[pTerm]) { termStationSel.value = pTerm; } 
+            else if(termStationSel.options.length > 0) { termStationSel.selectedIndex = termStationSel.options.length - 1; }
+
+            // 全駅個別臨時制御マトリクスのレンダリング
+            renderAllStationsOverrideTable(flatStations);
+            syncToLcd();
+        }
+
+        function renderAllStationsOverrideTable(flatStations) {
+            const tbody = document.getElementById('op-all-stations-override-body');
+            tbody.innerHTML = '';
+
+            if(flatStations.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#999;">有効な駅データがありません</td></tr>`;
+                return;
+            }
+
+            flatStations.forEach((st, idx) => {
+                // 初回のみメモリ上に初期化
+                if(!simState.overrides[st.id]) {
+                    simState.overrides[st.id] = { stop: false, pass: false, track: "" };
+                }
+                const ov = simState.overrides[st.id];
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight:bold; color:#666;">${idx}</td>
+                    <td><strong>${st.nameJa || '未命名'}</strong> <span style="font-size:0.75rem; color:#888;">(${st.routeName})</span></td>
+                    <td style="text-align:center;"><input type="checkbox" ${ov.stop?'checked':''} onchange="simState.overrides['${st.id}'].stop=this.checked; syncToLcd();"></td>
+                    <td style="text-align:center;"><input type="checkbox" ${ov.pass?'checked':''} onchange="simState.overrides['${st.id}'].pass=this.checked; syncToLcd();"></td>
+                    <td><input type="text" style="padding:4px; font-size:0.8rem;" value="${ov.track}" placeholder="例: 3番線" onchange="simState.overrides['${st.id}'].track=this.value; syncToLcd();"></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function syncRouteMetadata() {
+            syncTrainMetadata();
+        }
+
+        // --- ウィンドウ間マスターパケット転送 ---
+        function openLcdWindow() {
+            lcdWindow = window.open('', 'LcdMonitorReal', 'width=1280,height=720');
+            if (lcdWindow) {
+                lcdWindow.document.write(`
+                    <html><body style="background:#000;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;font-family:monospace;overflow:hidden;">
+                        <div style="border:2px solid #333;padding:20px;border-radius:10px;width:90%;max-height:90%;overflow:auto;">
+                            <h3>LCDデータレシーバーコア</h3>
+                            <pre id="view" style="font-size:0.8rem;text-align:left;"></pre>
+                        </div>
+                        <script>window.addEventListener('message',(e)=>{document.getElementById('view').innerHTML=JSON.stringify(e.data,null,2);});<\/script>
+                    </body></html>
+                `);
+                lcdWindow.document.close();
+                setTimeout(syncToLcd, 300);
+            }
+        }
+
+        function syncToLcd() {
+            if (lcdWindow && !lcdWindow.closed) {
+                const packet = {
+                    operation: {
+                        currentStationIndex: parseInt(document.getElementById('op-current-station').value) || 0,
+                        startStationIndex: parseInt(document.getElementById('op-start-station').value) || 0,
+                        terminalStationIndex: parseInt(document.getElementById('op-terminal-station').value) || 0,
+                        status: simState.status,
+                        systemId: document.getElementById('op-line-system').value,
+                        trainTypeId: document.getElementById('op-train-type').value,
+                        stationOverrides: simState.overrides
+                    },
+                    masterData: {
+                        train: globalTrainData,
+                        routes: globalRoutes,
+                        transfers: globalTransferData,
+                        design: globalDesignData
+                    }
+                };
+                lcdWindow.postMessage(packet, '*');
+            }
+        }
+
+        function exportJson(mode) {
+            let data = {};
+            if(mode === 'train') data = globalTrainData;
+            else if(mode === 'route') data = globalRoutes[currentRouteFile];
+            else if(mode === 'transfer') data = globalTransferData;
+            else if(mode === 'design') data = globalDesignData;
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${mode}_definition.json`;
+            a.click();
+        }
+
+        // --- 初期実証用ダミーデータプリセット ---
+        function setupInitialPresets() {
+            globalTrainData = {
+                designPath: "design/standard.json",
+                systems: [
+                    { id: "sys001", nameJa: "東海道線・上野東京ライン", nameKana: "とうかいどうせん", nameEn: "Tokaido-Line", nameZh: "东海道线", nameKo: "도카이도선", routes: [
+                        { nameJa: "宇都宮線", jsonPath: "route/line1.json", color: "#ff7e00", textColor: "white" }
+                    ]}
+                ],
+                types: [
+                    { id: "typ001", nameJa: "普通", nameKana: "ふつう", nameEn: "Local", nameZh: "普通", nameKo: "보통", bg: "#222222", fg: "#ffffff", stroke: "#ffffff" },
+                    { id: "typ002", nameJa: "快速", nameKana: "かいそく", nameEn: "Rapid", nameZh: "快速", nameKo: "쾌속", bg: "#d9381e", fg: "#ffffff", stroke: "#000000" }
+                ]
+            };
+
+            globalRoutes["route/line1.json"] = {
+                stations: [
+                    { id: "sta001", nameJa: "大宮", nameKana: "おおみや", nameEn: "Omiya", nameZh: "大宫", nameKo: "오미야", number: "JU-07", typeTimes: { typ001: 0, typ002: 0 }, transfers: ["trf001"], homeGuides: [] },
+                    { id: "sta002", nameJa: "さいたま新都心", nameKana: "さいたましんとしん", nameEn: "Saitama-Shintoshin", nameZh: "さいたま新都心", nameKo: "사이타마신도심", number: "JU-06", typeTimes: { typ001: 4, typ002: null }, transfers: [], homeGuides: [] }
+                ]
+            };
+
+            globalTransferData = {
+                lines: [
+                    { id: "trf001", nameJa: "京浜東北線", nameKana: "けいひんとうほくせん", nameEn: "Keihin-Tohoku Line", nameZh: "京滨东北线", nameKo: "케이힌 도호쿠선", icon: "keihin.png" }
+                ]
+            };
+            
+            renderTrainSystems();
+            renderTrainTypes();
+            renderTransferEditor();
+            updateRouteFileSelector();
+        }
+    </script>
+</body>
+</html>
