@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LCD Simulator - 完全統合コントロールパネル</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --panel-bg: #ffffff;
+            --primary-color: #007bff;
+            --primary-hover: #0056b3;
+            --text-color: #333333;
+            --border-color: #cccccc;
+            --status-running: #28a745;
+            --status-arriving: #ffc107;
+            --status-stopping: #dc3545;
+            --status-departing: #17a2b8;
+            --accent-color: #e83e8c;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.4;
+            padding-bottom: 90px;
+        }
+
+        header {
+            background-color: #222; color: #fff; padding: 12px;
+            text-align: center; font-size: 1.1rem; font-weight: bold;
+        }
+
+        /* 横スクロール対応タブ（スマホ用） */
+        .tabs {
+            display: flex; background-color: #333;
+            overflow-x: auto; white-space: nowrap;
+            position: sticky; top: 0; z-index: 100;
+            -webkit-overflow-scrolling: touch;
+        }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab-btn {
+            flex: 0 0 auto; padding: 12px 18px; background: none; border: none;
+            color: #aaa; font-size: 0.9rem; font-weight: bold; cursor: pointer;
+            border-bottom: 3px solid transparent; transition: all 0.2s;
+        }
+        .tab-btn.active {
+            color: #fff; border-bottom-color: var(--primary-color);
+            background-color: rgba(255,255,255,0.05);
+        }
+
+        .container { max-width: 950px; margin: 15px auto; padding: 0 12px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .panel {
+            background: var(--panel-bg); border-radius: 8px; padding: 15px;
+            margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .panel-title {
+            font-size: 0.95rem; font-weight: bold; margin-bottom: 12px;
+            border-left: 4px solid var(--primary-color); padding-left: 8px;
+            color: #444; display: flex; justify-content: space-between; align-items: center;
+        }
+
+        /* フォーム基本 */
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 3px; color: #666; }
+        
+        /* 多言語入力グリッド */
+        .lang-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 6px; background: #f8f9fa; padding: 8px; border-radius: 6px; border: 1px dashed #ddd;
+        }
+
+        select, input[type="text"], input[type="number"], input[type="color"] {
+            width: 100%; padding: 8px; border: 1px solid var(--border-color);
+            border-radius: 4px; font-size: 0.9rem; background-color: #fff;
+        }
+        input[type="color"] { height: 38px; padding: 2px; }
+        input[type="checkbox"] { transform: scale(1.2); margin-right: 5px; }
+
+        /* テーブルUI（路線定義用） */
+        .table-responsive { width: 100%; overflow-x: auto; margin-top: 10px; border: 1px solid #dee2e6; border-radius: 6px; }
+        .station-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; min-width: 700px; }
+        .station-table th, .station-table td { padding: 8px; border-bottom: 1px solid #dee2e6; }
+        .station-table th { background: #f1f3f5; font-weight: bold; color: #495057; }
+        .station-table tr:hover { background: #f8f9fa; }
+
+        /* ネスト内アコーディオンカード */
+        .nested-card {
+            background: #fdfdfd; border: 1px solid #e2e8f0; border-radius: 6px;
+            padding: 10px; margin-top: 8px; margin-bottom: 8px;
+        }
+        .nested-title { font-size: 0.8rem; font-weight: bold; color: #4a5568; margin-bottom: 6px; background: #edf2f7; padding: 4px; border-radius: 4px; }
+
+        /* ボタン */
+        .btn {
+            display: inline-block; width: 100%; padding: 10px; background-color: var(--primary-color);
+            color: #fff; border: none; border-radius: 4px; font-size: 0.9rem; font-weight: bold; cursor: pointer; text-align: center;
+        }
+        .btn:hover { background-color: var(--primary-hover); }
+        .btn-sm { padding: 4px 8px; font-size: 0.75rem; width: auto; }
+        .btn-danger { background-color: var(--status-stopping); }
+        .btn-success { background-color: var(--status-running); }
+
+        .status-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .btn-status { padding: 12px; font-size: 0.9rem; color: #fff; opacity: 0.5; }
+        .btn-status.active { opacity: 1; font-weight: bold; }
+        #status-running { background: var(--status-running); }
+        #status-arriving { background: var(--status-arriving); color: #333; }
+        #status-stopping { background: var(--status-stopping); }
+        #status-departing { background: var(--status-departing); }
+
+        .source-manager { background: #e9ecef; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 0.85rem; }
+        .source-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+
+        .launcher-zone { position: fixed; bottom: 0; left: 0; right: 0; background: #222; padding: 10px; z-index: 1000; }
+    </style>
+</head>
+<body>
+
+    <header>LCD Simulator 完全統合マスターパネル</header>
+
+    <nav class="tabs" id="main-tabs">
+        <button class="tab-btn active" onclick="switchTab('tab-operation')">運行操作</button>
+        <button class="tab-btn" onclick="switchTab('tab-train-editor')">列車定義</button>
+        <button class="tab-btn" onclick="switchTab('tab-route-editor')">路線定義 (表)</button>
+        <button class="tab-btn" onclick="switchTab('tab-design-editor')">デザイン定義</button>
+        <button class="tab-btn" onclick="switchTab('tab-sync-demo')">同期・デモ</button>
+    </nav>
+
+    <div class="container">
+        
+        <div id="tab-operation" class="tab-content active">
+            <div class="panel">
+                <div class="panel-title">シミュレーションライブ操作</div>
+                <div class="form-group">
+                    <label>列車定義データ連携</label>
+                    <select id="op-train-json-ref" onchange="syncTrainMetadata()"><option value="current">エディタ内の現在のデータ</option></select>
+                </div>
+                <div class="form-group">
+                    <label>系統（路線定義の組み合わせ）</label>
+                    <select id="op-line-system" onchange="syncRouteMetadata()"><option value="-">-</option></select>
+                </div>
+                <div class="form-group">
+                    <label>列車種別</label>
+                    <select id="op-train-type" onchange="syncToLcd()"><option value="-">-</option></select>
+                </div>
+                <div class="grid-2" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div class="form-group"><label>始発駅 (インデックス)</label><select id="op-start-station"><option value="0">-</option></select></div>
+                    <div class="form-group"><label>終着/停車駅 (インデックス)</label><select id="op-terminal-station"><option value="0">-</option></select></div>
+                </div>
+                <div class="form-group"><label>現在駅</label><select id="op-current-station" onchange="syncToLcd()"><option value="0">-</option></select></div>
+                
+                <div class="form-group">
+                    <label>運行状態</label>
+                    <div class="status-grid">
+                        <button id="status-running" class="btn btn-status" onclick="setStatus('running')">走行中</button>
+                        <button id="status-arriving" class="btn btn-status" onclick="setStatus('arriving')">到着中</button>
+                        <button id="status-stopping" class="btn btn-status" onclick="setStatus('stopping')">停車中</button>
+                        <button id="status-departing" class="btn btn-status active" onclick="setStatus('departing')">発車中</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">現在駅の臨時制御・番線編集</div>
+                <div class="form-group" style="display:flex; gap:15px; padding:5px 0;">
+                    <label><input type="checkbox" id="op-override-stop" onchange="syncToLcd()"> 臨時停車に変更</label>
+                    <label><input type="checkbox" id="op-override-pass" onchange="syncToLcd()"> 臨時通過に変更</label>
+                </div>
+                <div class="form-group">
+                    <label>停車番線指定（ホーム案内をオーバーライド）</label>
+                    <input type="text" id="op-override-track" value="" placeholder="例: 2 (空欄時はデフォルトを参照)" onchange="syncToLcd()">
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">車両環境仕様</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div class="form-group"><label>総編成数</label><input type="number" id="op-total-cars" value="10" onchange="syncToLcd()"></div>
+                    <div class="form-group"><label>設置車両 (自号車)</label><input type="number" id="op-this-car" value="1" onchange="syncToLcd()"></div>
+                </div>
+                <div class="form-group">
+                    <label>設置場所</label>
+                    <select id="op-position" onchange="syncToLcd()">
+                        <option value="left">左側 (ドア上)</option><option value="right">右側 (ドア上)</option>
+                        <option value="front">前方向 (妻面・右開)</option><option value="back">後方向 (妻面・左開)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-train-editor" class="tab-content">
+            <div class="source-manager">
+                <strong>データソース（列車定義）</strong>
+                <div class="source-actions">
+                    <button class="btn btn-sm btn-success" onclick="createNewTrainConfig()">新規</button>
+                    <button class="btn btn-sm" onclick="document.getElementById('file-train').click()">ファイル読込</button>
+                    <input type="file" id="file-train" accept=".json" style="display:none" onchange="importJson(this, 'train')">
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">基本メタデータ</div>
+                <div class="form-group"><label>デザイン定義JSON参照パス</label><input type="text" id="tr-design-path" value="design/default.json"></div>
+                <label>路線系統総称</label>
+                <div class="lang-grid">
+                    <div><label>日</label><input type="text" id="tr-gname-ja"></div>
+                    <div><label>英</label><input type="text" id="tr-gname-en"></div>
+                    <div><label>か</label><input type="text" id="tr-gname-kana"></div>
+                    <div><label>中</label><input type="text" id="tr-gname-zh"></div>
+                    <div><label>韓</label><input type="text" id="tr-gname-ko"></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">系統リスト（路線定義の組み合わせ） <button class="btn btn-sm btn-success" onclick="addTrainSystemUi()">+ 系統を追加</button></div>
+                <div id="train-systems-list"></div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">種別リスト <button class="btn btn-sm btn-success" onclick="addTrainTypeUi()">+ 種別を追加</button></div>
+                <div id="train-types-list"></div>
+            </div>
+            <button class="btn btn-success" onclick="exportJson('train')">列車定義JSONを書き出し (DL)</button>
+        </div>
+
+        <div id="tab-route-editor" class="tab-content">
+            <div class="source-manager">
+                <strong>データソース（路線定義）</strong>
+                <div class="form-group">
+                    <label>現在エディタで編集する路線JSONファイル</label>
+                    <select id="route-file-selector" onchange="switchRouteFile()"><option value="route/line1.json">route/line1.json (デフォルト)</option></select>
+                </div>
+                <div class="form-group">
+                    <label>乗換路線定義JSON参照パス</label>
+                    <input type="text" id="rt-transfer-json-path" value="transfer/default.json">
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">駅構成エディタ（表形式） <button class="btn btn-sm btn-success" onclick="addTableRowStation()">+ 駅を最後尾に追加</button></div>
+                <p style="font-size:0.75rem; color:#666;">※漢字を入力すると「かな」が自動補完され、さらに「英・中・韓」の擬似ローカライズが即時展開されます。</p>
+                <div class="table-responsive">
+                    <table class="station-table" id="route-table">
+                        <thead>
+                            <tr>
+                                <th style="width:70px;">操作/ID</th>
+                                <th>駅名（多言語入力 / 翻訳）</th>
+                                <th style="width:100px;">駅ナンバリング</th>
+                                <th>詳細構成（種別停車時間・乗換・ホーム案内）</th>
+                            </tr>
+                        </thead>
+                        <tbody id="route-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            <button class="btn btn-success" onclick="exportJson('route')">現在選択中の路線定義JSONを書き出し (DL)</button>
+        </div>
+
+        <div id="tab-design-editor" class="tab-content">
+            <div class="panel">
+                <div class="panel-title">基本レイアウト構造</div>
+                <div class="form-group"><label>メインエリアHTMLパス</label><input type="text" id="ds-main-html-path" value="main/pattern1.html"></div>
+            </div>
+            <div class="panel">
+                <div class="panel-title">状態毎のインフォメーションエリアスライドショー</div>
+                <div id="design-status-container">
+                    </div>
+            </div>
+            <button class="btn btn-success" onclick="exportJson('design')">デザイン定義JSONを書き出し (DL)</button>
+        </div>
+
+        <div id="tab-sync-demo" class="tab-content">
+            <div class="panel">
+                <div class="panel-title">外部同期 (Web Worker)</div>
+                <div class="form-group"><label>同期URL</label><input type="text" id="sync-url" value="http://localhost:3000/status"></div>
+                <button id="btn-sync-toggle" class="btn" onclick="toggleSync()">外部自動同期を有効化</button>
+            </div>
+            <div class="panel">
+                <div class="panel-title">自動デモシミュレータ</div>
+                <div class="form-group">
+                    <label>速度倍率</label>
+                    <select id="demo-speed"><option value="1">1倍速 (通常)</option><option value="2">2倍速</option><option value="5">5倍速</option></select>
+                </div>
+                <button id="btn-demo-toggle" class="btn" style="background:#6f42c1;" onclick="toggleDemo()">デモモード起動</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="launcher-zone">
+        <button class="btn" style="background: var(--accent-color);" onclick="openLcdWindow()">LCDビューア画面 (ポップアップ) を開く</button>
+    </div>
+
+    <script>
+        // --- メモリ上データストア（全構造を格納） ---
+        let globalTrainData = { nameGroup: {}, systems: [], types: [], designPath: "design/default.json" };
+        let globalRoutes = { "route/line1.json": { transferPath: "transfer/default.json", stations: [] } };
+        let globalDesignData = { mainPath: "main/pattern1.html", infoList: { running: [], arriving: [], stopping: [], departing: [] } };
+        
+        let currentRouteFile = "route/line1.json";
+        let simState = { stationIndex: 0, status: 'departing', totalCars: 10, thisCar: 1, position: 'left' };
+        let lcdWindow = null, worker = null, isSyncing = false, isDemoMode = false, demoTimer = null;
+
+        window.onload = () => {
+            // 初期プリセットデータの自動注入（動作検証用）
+            setupInitialPresets();
+            renderAllEditors();
+            buildDesignEditor();
+        };
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+            if(btn) btn.classList.add('active');
+        }
+
+        function setStatus(status) {
+            simState.status = status;
+            document.querySelectorAll('.btn-status').forEach(b => b.classList.remove('active'));
+            document.getElementById(`status-${status}`).classList.add('active');
+            syncToLcd();
+        }
+
+        // --- 簡易多言語自動翻訳（モックロジック） ---
+        function handleTranslation(inputEl) {
+            const row = inputEl.closest('tr');
+            const jaKanji = inputEl.value;
+            
+            // 擬似ふりがな生成（実際は外部API等。ここでは簡単な読み仮名モック化）
+            const kanaInput = row.querySelector('.st-kana');
+            if(!kanaInput.value) {
+                kanaInput.value = jaKanji + "（かな）";
+            }
+            
+            // ひらがなベースで他言語を即座に補完生成
+            triggerForeignLangGeneration(row);
+        }
+
+        function triggerForeignLangGeneration(row) {
+            const kana = row.querySelector('.st-kana').value;
+            const ja = row.querySelector('.st-ja').value;
+            
+            const enInput = row.querySelector('.st-en');
+            const zhInput = row.querySelector('.st-zh');
+            const koInput = row.querySelector('.st-ko');
+            
+            if(!enInput.value) enInput.value = ja ? ja + "-Station" : "Station";
+            if(!zhInput.value) zhInput.value = ja ? "楼" + ja : "駅";
+            if(!koInput.value) koInput.value = ja ? ja + "역" : "역";
+        }
+
+        // --- 列車定義エディタ描画 ---
+        function renderAllEditors() {
+            renderTrainSystems();
+            renderTrainTypes();
+            renderRouteTable();
+            updateOperationSelectors();
+        }
+
+        function renderTrainSystems() {
+            const container = document.getElementById('train-systems-list');
+            container.innerHTML = '';
+            globalTrainData.systems.forEach((sys, index) => {
+                const div = document.createElement('div');
+                div.className = 'nested-card';
+                div.innerHTML = `
+                    <div style="display:flex; gap:10px; margin-bottom:5px;">
+                        <div style="width:30%"><label style="font-size:0.75rem;">ユーザー指定ID</label><input type="text" value="${sys.id}" onchange="globalTrainData.systems[${index}].id=this.value; updateRouteFileSelector();"></div>
+                        <div style="width:70%"><label style="font-size:0.75rem;">系統名(日)</label><input type="text" value="${sys.nameJa || ''}" onchange="globalTrainData.systems[${index}].nameJa=this.value; updateOperationSelectors();"></div>
+                    </div>
+                    
+                    <div class="nested-title">内包する路線定義のスタック（直通順） <button class="btn btn-sm btn-success" onclick="addRouteToSystem(${index})">+ 路線を参照追加</button></div>
+                    <div id="sys-routes-${index}"></div>
+                    <button class="btn btn-sm btn-danger" style="margin-top:5px;" onclick="globalTrainData.systems.splice(${index},1); renderTrainSystems();">この系統を削除</button>
+                `;
+                container.appendChild(div);
+                renderSystemRouteList(index);
+            });
+        }
+
+        function renderSystemRouteList(sysIndex) {
+            const container = document.getElementById(`sys-routes-${sysIndex}`);
+            container.innerHTML = '';
+            const sys = globalTrainData.systems[sysIndex];
+            if(!sys.routes) sys.routes = [];
+            
+            sys.routes.forEach((rt, rIdx) => {
+                const d = document.createElement('div');
+                d.style = "display:grid; grid-template-columns:1.5fr 2fr 1fr 1fr auto; gap:4px; margin-bottom:4px; background:#fff; padding:4px; border:1px solid #ddd;";
+                d.innerHTML = `
+                    <input type="text" placeholder="路線名" value="${rt.nameJa || ''}" onchange="globalTrainData.systems[${sysIndex}].routes[${rIdx}].nameJa=this.value;">
+                    <input type="text" placeholder="jsonパス" value="${rt.jsonPath || ''}" onchange="globalTrainData.systems[${sysIndex}].routes[${rIdx}].jsonPath=this.value; updateRouteFileSelector();">
+                    <input type="color" value="${rt.color || '#007bff'}" onchange="globalTrainData.systems[${sysIndex}].routes[${rIdx}].color=this.value;">
+                    <select onchange="globalTrainData.systems[${sysIndex}].routes[${rIdx}].textColor=this.value;"><option value="white" ${rt.textColor==='white'?'selected':''}>白</option><option value="black" ${rt.textColor==='black'?'selected':''}>黒</option></select>
+                    <button class="btn btn-sm btn-danger" onclick="globalTrainData.systems[${sysIndex}].routes.splice(${rIdx},1); renderSystemRouteList(${sysIndex});">X</button>
+                `;
+                container.appendChild(d);
+            });
+        }
+
+        function addRouteToSystem(sysIndex) {
+            // 新規作成、サーバ、他系統からのインポート選択付きモックアクション
+            const choice = prompt("路線の追加方法を選択してください:\n1: 新規ファイル定義追加\n2: サーバーテンプレートからコピー\n3: 他の系統から流用", "1");
+            let newRoute = { nameJa: "新路線", jsonPath: `route/line_${Date.now()}.json`, color: "#007bff", textColor: "white" };
+            if (choice === "2") newRoute = { nameJa: "東海道線", jsonPath: "route/tokaido.json", color: "#ff7e00", textColor: "white" };
+            
+            globalTrainData.systems[sysIndex].routes.push(newRoute);
+            if(!globalRoutes[newRoute.jsonPath]) {
+                globalRoutes[newRoute.jsonPath] = { transferPath: "transfer/default.json", stations: [] };
+            }
+            renderSystemRouteList(sysIndex);
+            updateRouteFileSelector();
+        }
+
+        function addTrainSystemUi() {
+            const userId = prompt("定義する系統の任意識別IDを入力してください:", "SYS_LOCAL_01");
+            if(userId) {
+                globalTrainData.systems.push({ id: userId, nameJa: "新規系統名称", routes: [] });
+                renderTrainSystems();
+            }
+        }
+
+        function renderTrainTypes() {
+            const container = document.getElementById('train-types-list');
+            container.innerHTML = '';
+            globalTrainData.types.forEach((t, index) => {
+                const div = document.createElement('div');
+                div.className = 'nested-card';
+                div.innerHTML = `
+                    <div style="display:grid; grid-template-columns:1fr 2fr 1fr 1fr 1fr auto; gap:5px; align-items:center;">
+                        <input type="text" value="${t.id}" placeholder="ID" onchange="globalTrainData.types[${index}].id=this.value;">
+                        <input type="text" value="${t.nameJa || ''}" placeholder="種別名" onchange="globalTrainData.types[${index}].nameJa=this.value; updateOperationSelectors();">
+                        <div><label style="font-size:0.6rem;display:block;">背景</label><input type="color" value="${t.bg}" onchange="globalTrainData.types[${index}].bg=this.value;"></div>
+                        <div><label style="font-size:0.6rem;display:block;">文字</label><input type="color" value="${t.fg}" onchange="globalTrainData.types[${index}].fg=this.value;"></div>
+                        <div><label style="font-size:0.6rem;display:block;">輪郭</label><input type="color" value="${t.stroke}" onchange="globalTrainData.types[${index}].stroke=this.value;"></div>
+                        <button class="btn btn-sm btn-danger" onclick="globalTrainData.types.splice(${index},1); renderTrainTypes();">削除</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function addTrainTypeUi() {
+            const typeId = prompt("種別IDを入力してください (例: LOCAL, RAPID):", "RAPID");
+            if(typeId) {
+                globalTrainData.types.push({ id: typeId, nameJa: "快速", bg: "#ff0000", fg: "#ffffff", stroke: "#000000" });
+                renderTrainTypes();
+            }
+        }
+
+        function updateRouteFileSelector() {
+            const selector = document.getElementById('route-file-selector');
+            selector.innerHTML = '';
+            Object.keys(globalRoutes).forEach(path => {
+                const opt = new Option(path, path);
+                selector.add(opt);
+            });
+            selector.value = currentRouteFile;
+        }
+
+        function switchRouteFile() {
+            currentRouteFile = document.getElementById('route-file-selector').value;
+            renderRouteTable();
+        }
+
+        // --- 3. 路線定義エディタ（完全表形式構造） ---
+        function renderRouteTable() {
+            const tbody = document.getElementById('route-table-body');
+            tbody.innerHTML = '';
+            const routeData = globalRoutes[currentRouteFile];
+            if(!routeData) return;
+
+            routeData.stations.forEach((st, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>
+                        <input type="text" value="${st.id || 'ST_' + index}" style="font-size:0.75rem; padding:4px;" onchange="globalRoutes['${currentRouteFile}'].stations[${index}].id=this.value;"><br>
+                        <button class="btn btn-sm btn-danger" style="padding:2px 4px;margin-top:4px;" onclick="globalRoutes['${currentRouteFile}'].stations.splice(${index},1); renderRouteTable();">削除</button>
+                    </td>
+                    <td>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-bottom:4px;">
+                            <input type="text" class="st-ja" value="${st.nameJa || ''}" placeholder="漢字" onchange="globalRoutes['${currentRouteFile}'].stations[${index}].nameJa=this.value; handleTranslation(this)">
+                            <input type="text" class="st-kana" value="${st.nameKana || ''}" placeholder="かな" onchange="globalRoutes['${currentRouteFile}'].stations[${index}].nameKana=this.value; triggerForeignLangGeneration(this.closest('tr'))">
+                        </div>
+                        <div class="lang-grid" style="padding:4px;">
+                            <input type="text" class="st-en" value="${st.nameEn || ''}" placeholder="English" onchange="globalRoutes['${currentRouteFile}'].stations[${index}].nameEn=this.value;">
+                            <input type="text" class="st-zh" value="${st.nameZh || ''}" placeholder="中文" onchange="globalRoutes['${currentRouteFile}'].stations[${index}].nameZh=this.value;">
+                            <input type="text" class="st-ko" value="${st.nameKo || ''}" placeholder="한국어" onchange="globalRoutes['${currentRouteFile}'].stations[${index}].nameKo=this.value;">
+                        </div>
+                    </td>
+                    <td>
+                        <input type="text" value="${st.number || ''}" placeholder="JN-01" onchange="globalRoutes['${currentRouteFile}'].stations[${index}].number=this.value;">
+                    </td>
+                    <td>
+                        <button class="btn btn-sm" style="background:#4a5568;" onclick="toggleAccordion('detail-area-${index}')">詳細構成データ群を表示/編集</button>
+                        <div id="detail-area-${index}" style="display:none; margin-top:8px; border-top:2px solid #ddd; padding-top:5px;">
+                            
+                            <div class="nested-title">種別毎の所要時間・停車設定</div>
+                            <div id="st-type-times-${index}"></div>
+                            
+                            <div class="nested-title">接続乗換路線IDリスト <button class="btn btn-sm btn-success" onclick="addTransferToStation(${index})">+</button></div>
+                            <div id="st-transfers-${index}"></div>
+
+                            <div class="nested-title">ホーム案内・着発プラットフォーム情報 <button class="btn btn-sm btn-success" onclick="addHomeGuidanceToStation(${index})">+ 案内面を追加</button></div>
+                            <div id="st-homeguide-${index}"></div>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+                buildStationNestedFields(index, st);
+            });
+        }
+
+        function toggleAccordion(id) {
+            const el = document.getElementById(id);
+            el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function buildStationNestedFields(stIdx, stData) {
+            // 種別時間フォーム
+            const timeContainer = document.getElementById(`st-type-times-${stIdx}`);
+            timeContainer.innerHTML = '';
+            if(!stData.typeTimes) stData.typeTimes = {};
+            globalTrainData.types.forEach(t => {
+                const val = stData.typeTimes[t.id] !== undefined ? stData.typeTimes[t.id] : "";
+                const d = document.createElement('div');
+                d.style = "display:inline-block; margin-right:10px; font-size:0.75rem;";
+                d.innerHTML = `
+                    <label>${t.nameJa}: </label>
+                    <input type="number" style="width:70px; padding:2px;" placeholder="通過時null" value="${val}" 
+                        onchange="globalRoutes['${currentRouteFile}'].stations[${stIdx}].typeTimes['${t.id}']=this.value===''?null:parseInt(this.value);">
+                `;
+                timeContainer.appendChild(d);
+            });
+
+            // 乗換路線IDリスト
+            const transContainer = document.getElementById(`st-transfers-${stIdx}`);
+            transContainer.innerHTML = '';
+            if(!stData.transfers) stData.transfers = [];
+            stData.transfers.forEach((trId, trIdx) => {
+                const span = document.createElement('span');
+                span.style = "display:inline-flex; align-items:center; background:#e2e8f0; padding:2px 6px; border-radius:4px; margin-right:5px; margin-bottom:4px; font-size:0.75rem;";
+                span.innerHTML = `
+                    <input type="text" style="width:90px; border:none; background:none; padding:0;" value="${trId}" onchange="globalRoutes['${currentRouteFile}'].stations[${stIdx}].transfers[${trIdx}]=this.value">
+                    <button style="border:none; margin-left:4px; cursor:pointer;" onclick="globalRoutes['${currentRouteFile}'].stations[${stIdx}].transfers.splice(${trIdx},1); buildStationNestedFields(${stIdx}, globalRoutes['${currentRouteFile}'].stations[${stIdx}]);">x</button>
+                `;
+                transContainer.appendChild(span);
+            });
+
+            // ホーム案内リスト
+            const homeContainer = document.getElementById(`st-homeguide-${stIdx}`);
+            homeContainer.innerHTML = '';
+            if(!stData.homeGuides) stData.homeGuides = [];
+            stData.homeGuides.forEach((hg, hgIdx) => {
+                const card = document.createElement('div');
+                card.style = "border:1px dashed #cbd5e0; padding:8px; margin-bottom:6px; background:#fff;";
+                card.innerHTML = `
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px; margin-bottom:5px;">
+                        <input type="text" placeholder="到着番線ID" value="${hg.trackId || ''}" onchange="globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].trackId=this.value;">
+                        <input type="text" placeholder="ホーム長 (例:10両分)" value="${hg.length || ''}" onchange="globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].length=this.value;">
+                        <input type="text" placeholder="停車位置 (○両の場合○両目)" value="${hg.stopPosition || ''}" onchange="globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].stopPosition=this.value;">
+                    </div>
+                    <div class="nested-title" style="background:#edf2f7; font-size:0.7rem;">グラフィック要素パーツリスト <button class="btn btn-sm btn-success" onclick="addHomeElement(${stIdx}, ${hgIdx})">+</button></div>
+                    <div id="hg-elements-${stIdx}-${hgIdx}"></div>
+                    <button class="btn btn-sm btn-danger" style="margin-top:4px; padding:2px;" onclick="globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides.splice(${hgIdx},1); buildStationNestedFields(${stIdx}, globalRoutes['${currentRouteFile}'].stations[${stIdx}]);">この案内面を削除</button>
+                `;
+                homeContainer.appendChild(card);
+                renderHomeElements(stIdx, hgIdx, hg.elements || []);
+            });
+        }
+
+        function renderHomeElements(stIdx, hgIdx, elements) {
+            const cont = document.getElementById(`hg-elements-${stIdx}-${hgIdx}`);
+            cont.innerHTML = '';
+            elements.forEach((el, elIdx) => {
+                const d = document.createElement('div');
+                d.style = "display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr auto; gap:3px; margin-bottom:3px;";
+                d.innerHTML = `
+                    <input type="text" placeholder="CSSクラス" value="${el.cssClass || ''}" onchange="globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].elements[${elIdx}].cssClass=this.value;">
+                    <input type="text" placeholder="HTML要素" value="${el.html || ''}" onchange="globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].elements[${elIdx}].html=this.value;">
+                    <input type="text" placeholder="画像名" value="${el.imgSrc || ''}" onchange="globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].elements[${elIdx}].imgSrc=this.value;">
+                    <input type="number" placeholder="X" value="${el.x || 0}" onchange="globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].elements[${elIdx}].x=parseInt(this.value);">
+                    <input type="number" placeholder="Y" value="${el.y || 0}" onchange="globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].elements[${elIdx}].y=parseInt(this.value);">
+                    <input type="number" placeholder="W" value="${el.w || 0}" onchange="globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].elements[${elIdx}].w=parseInt(this.value);">
+                    <input type="number" placeholder="H" value="${el.h || 0}" onchange="globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].elements[${elIdx}].h=parseInt(this.value);">
+                    <button class="btn btn-sm btn-danger" onclick="globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].elements.splice(${elIdx},1); renderHomeElements(${stIdx},${hgIdx},globalRoutes['${currentRouteFile}'].stations[${stIdx}].homeGuides[${hgIdx}].elements);">X</button>
+                `;
+                cont.appendChild(d);
+            });
+        }
+
+        function addHomeElement(stIdx, hgIdx) {
+            if(!globalRoutes[currentRouteFile].stations[stIdx].homeGuides[hgIdx].elements) globalRoutes[currentRouteFile].stations[stIdx].homeGuides[hgIdx].elements = [];
+            globalRoutes[currentRouteFile].stations[stIdx].homeGuides[hgIdx].elements.push({ cssClass: "", html: "", imgSrc: "", x:0, y:0, w:100, h:50 });
+            buildStationNestedFields(stIdx, globalRoutes[currentRouteFile].stations[stIdx]);
+        }
+
+        function addTransferToStation(idx) {
+            const trId = prompt("接続させる乗換路線IDを入力してください:", "LINE_YAMANOTE");
+            if(trId) {
+                globalRoutes[currentRouteFile].stations[idx].transfers.push(trId);
+                buildStationNestedFields(idx, globalRoutes[currentRouteFile].stations[idx]);
+            }
+        }
+
+        function addHomeGuidanceToStation(idx) {
+            globalRoutes[currentRouteFile].stations[idx].homeGuides.push({ trackId: "1", length: "10両", stopPosition: "10", elements: [] });
+            buildStationNestedFields(idx, globalRoutes[currentRouteFile].stations[idx]);
+        }
+
+        function addTableRowStation() {
+            const userStId = prompt("駅の独自識別IDを入力してください:", "ST_KAWASAKI");
+            if(userStId) {
+                globalRoutes[currentRouteFile].stations.push({ id: userStId, nameJa: "", nameKana: "", transfers: [], homeGuides: [] });
+                renderRouteTable();
+                updateOperationSelectors();
+            }
+        }
+
+        // --- 4. デザイン定義エディタ生成 ---
+        function buildDesignEditor() {
+            const container = document.getElementById('design-status-container');
+            container.innerHTML = '';
+            const states = ['running', 'arriving', 'stopping', 'departing'];
+            const stateLabels = { running: '走行中', arriving: '到着中', stopping: '停車中', departing: '発車中' };
+
+            states.forEach(stKey => {
+                const div = document.createElement('div');
+                div.className = 'nested-card';
+                div.innerHTML = `
+                    <div class="nested-title">${stateLabels[stKey]}状態のインフォメーションエリア演出スタック <button class="btn btn-sm btn-success" onclick="addDesignHtmlRow('${stKey}')">+ 演出を追加</button></div>
+                    <div id="ds-stack-${stKey}"></div>
+                `;
+                container.appendChild(div);
+                renderDesignStateStack(stKey);
+            });
+        }
+
+        function renderDesignStateStack(stKey) {
+            const box = document.getElementById(`ds-stack-${stKey}`);
+            box.innerHTML = '';
+            if(!globalDesignData.infoList[stKey]) globalDesignData.infoList[stKey] = [];
+            
+            globalDesignData.infoList[stKey].forEach((item, index) => {
+                const d = document.createElement('div');
+                d.style = "display:grid; grid-template-columns:3fr 1fr auto; gap:5px; margin-bottom:4px;";
+                d.innerHTML = `
+                    <input type="text" placeholder="HTMLファイルパス" value="${item.path || ''}" onchange="globalDesignData.infoList['${stKey}'][${index}].path=this.value;">
+                    <input type="number" placeholder="秒数" value="${item.sec || 4}" onchange="globalDesignData.infoList['${stKey}'][${index}].sec=parseFloat(this.value);">
+                    <button class="btn btn-sm btn-danger" onclick="globalDesignData.infoList['${stKey}'].splice(${index},1); renderDesignStateStack('${stKey}');">X</button>
+                `;
+                box.appendChild(d);
+            });
+        }
+
+        function addDesignHtmlRow(stKey) {
+            globalDesignData.infoList[stKey].push({ path: "info/layout_default.html", sec: 5 });
+            renderDesignStateStack(stKey);
+        }
+
+        // --- 5. 運行操作セレクターの動的同期 ---
+        function updateOperationSelectors() {
+            const systemSel = document.getElementById('op-line-system');
+            systemSel.innerHTML = '';
+            globalTrainData.systems.forEach(sys => {
+                systemSel.add(new Option(sys.nameJa || sys.id, sys.id));
+            });
+
+            const typeSel = document.getElementById('op-train-type');
+            typeSel.innerHTML = '';
+            globalTrainData.types.forEach(t => {
+                typeSel.add(new Option(t.nameJa || t.id, t.id));
+            });
+
+            syncTrainMetadata();
+        }
+
+        function syncTrainMetadata() {
+            const currentSysId = document.getElementById('op-line-system').value;
+            const sysData = globalTrainData.systems.find(s => s.id === currentSysId);
+            
+            const currentStationSel = document.getElementById('op-current-station');
+            const startStationSel = document.getElementById('op-start-station');
+            const termStationSel = document.getElementById('op-terminal-station');
+            
+            currentStationSel.innerHTML = '';
+            startStationSel.innerHTML = '';
+            termStationSel.innerHTML = '';
+
+            if(sysData && sysData.routes && sysData.routes.length > 0) {
+                let通しIndex = 0;
+                sysData.routes.forEach(r => {
+                    const rData = globalRoutes[r.jsonPath];
+                    if(rData && rData.stations) {
+                        rData.stations.forEach(st => {
+                            const name = st.nameJa || "未定義駅";
+                            currentStationSel.add(new Option(`${name} (${通しIndex})`, 通しIndex));
+                            startStationSel.add(new Option(`${name} (${通しIndex})`, 通しIndex));
+                            termStationSel.add(new Option(`${name} (${通しIndex})`, 通しIndex));
+                            通しIndex++;
+                        });
+                    }
+                });
+            }
+            if(termStationSel.options.length > 0) termStationSel.selectedIndex = termStationSel.options.length - 1;
+            syncToLcd();
+        }
+
+        function syncRouteMetadata() {
+            syncTrainMetadata();
+        }
+
+        // --- ウィンドウ間通信コア ---
+        function openLcdWindow() {
+            lcdWindow = window.open('', 'LcdMonitorReal', 'width=1280,height=720');
+            if (lcdWindow) {
+                lcdWindow.document.write(`
+                    <html><body style="background:#000;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;font-family:sans-serif;overflow:hidden;">
+                        <div style="text-align:center;border:2px solid #333;padding:40px;border-radius:10px;width:80%;">
+                            <h2>LCD画面モニターコア（データ受入中）</h2>
+                            <div id="view" style="font-family:monospace;background:#111;padding:15px;text-align:left;white-space:pre-wrap;font-size:0.85rem;"></div>
+                        </div>
+                        <script>
+                            window.addEventListener('message', (e) => {
+                                document.getElementById('view').innerHTML = JSON.stringify(e.data, null, 2);
+                            });
+                        <\/script>
+                    </body></html>
+                `);
+                lcdWindow.document.close();
+                setTimeout(syncToLcd, 400);
+            }
+        }
+
+        function syncToLcd() {
+            if (lcdWindow && !lcdWindow.closed) {
+                const activeStateObj = {
+                    stationIndex: parseInt(document.getElementById('op-current-station').value) || 0,
+                    startStationIndex: parseInt(document.getElementById('op-start-station').value) || 0,
+                    terminalStationIndex: parseInt(document.getElementById('op-terminal-station').value) || 0,
+                    status: simState.status,
+                    totalCars: parseInt(document.getElementById('op-total-cars').value) || 10,
+                    thisCar: parseInt(document.getElementById('op-this-car').value) || 1,
+                    position: document.getElementById('op-position').value,
+                    overrideStop: document.getElementById('op-override-stop').checked,
+                    overridePass: document.getElementById('op-override-pass').checked,
+                    overrideTrack: document.getElementById('op-override-track').value,
+                    currentSystemId: document.getElementById('op-line-system').value,
+                    currentTrainTypeId: document.getElementById('op-train-type').value,
+                    // マスターデータそのものも一緒に入れてリレー伝送
+                    runtimeTrainConfig: globalTrainData,
+                    runtimeRouteConfig: globalRoutes,
+                    runtimeDesignConfig: globalDesignData
+                };
+                lcdWindow.postMessage(activeStateObj, '*');
+            }
+        }
+
+        // --- Web Worker自動連携 & デモ自動化 ---
+        function toggleSync() {
+            const btn = document.getElementById('btn-sync-toggle');
+            if (isSyncing) {
+                if(worker) worker.terminate();
+                isSyncing = false; btn.innerText = "外部自動同期を有効化"; btn.style.background = "var(--primary-color)";
+            } else {
+                const wCode = `
+                    let t = null;
+                    self.onmessage = function(e) {
+                        t = setInterval(async () => {
+                            try {
+                                const r = await fetch(e.data.url);
+                                if(r.ok) { const d = await r.json(); self.postMessage({ success:true, data:d }); }
+                            } catch(e) { self.postMessage({ success:false }); }
+                        }, 1000);
+                    };
+                `;
+                worker = new Worker(URL.createObjectURL(new Blob([wCode], {type:'application/javascript'})));
+                worker.onmessage = function(e) {
+                    if(e.data.success && e.data.data.stationIndex !== undefined) {
+                        document.getElementById('op-current-station').value = e.data.data.stationIndex;
+                        setStatus(e.data.data.status);
+                    }
+                };
+                worker.postMessage({ url: document.getElementById('sync-url').value });
+                isSyncing = true; btn.innerText = "同期動作中 (停止)"; btn.style.background = "var(--status-stopping)";
+            }
+        }
+
+        function toggleDemo() {
+            const btn = document.getElementById('btn-demo-toggle');
+            const states = ['running', 'arriving', 'stopping', 'departing'];
+            const mult = parseInt(document.getElementById('demo-speed').value) || 1;
+
+            if (isDemoMode) {
+                clearInterval(demoTimer); isDemoMode = false; btn.innerText = "デモモード起動"; btn.style.background = "#6f42c1";
+            } else {
+                isDemoMode = true; btn.innerText = "デモ停止"; btn.style.background = "var(--status-stopping)";
+                let idx = states.indexOf(simState.status);
+                demoTimer = setInterval(() => {
+                    idx = (idx + 1) % states.length;
+                    if(states[idx] === 'running') {
+                        const sel = document.getElementById('op-current-station');
+                        let next = sel.selectedIndex + 1;
+                        if(next >= sel.options.length) next = 0;
+                        sel.selectedIndex = next;
+                    }
+                    setStatus(states[idx]);
+                }, 4000 / mult);
+            }
+        }
+
+        // --- JSONインポート・エクスポートコア ---
+        function createNewTrainConfig() {
+            globalTrainData = { nameGroup: {}, systems: [], types: [], designPath: "design/default.json" };
+            renderAllEditors();
+            alert("新規の空フレームを作成しました。");
+        }
+
+        function importJson(input, mode) {
+            const file = input.files[0]; if(!file) return;
+            const r = new FileReader();
+            r.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if(mode === 'train') { globalTrainData = parsed; }
+                    else if(mode === 'route') { globalRoutes[currentRouteFile] = parsed; }
+                    renderAllEditors();
+                    alert("JSONデータをエディタへロードしました。");
+                } catch(err) { alert("JSON構文エラーです。"); }
+            };
+            r.readAsText(file);
+        }
+
+        function exportJson(mode) {
+            let outData = {};
+            if(mode === 'train') outData = globalTrainData;
+            else if(mode === 'route') outData = globalRoutes[currentRouteFile];
+            else if(mode === 'design') outData = globalDesignData;
+
+            const blob = new Blob([JSON.stringify(outData, null, 2)], {type:'application/json'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${mode}_definition.json`;
+            a.click();
+        }
+
+        // テスト用の初期構造モックデータ注入
+        function setupInitialPresets() {
+            globalTrainData = {
+                designPath: "design/pattern_standard.json",
+                nameJa: "上野東京ライン",
+                systems: [
+                    {
+                        id: "SYS_UT_01",
+                        nameJa: "宇都宮線・上野東京ライン直通",
+                        routes: [
+                            { nameJa: "宇都宮線", jsonPath: "route/utsunomiya.json", color: "#ff7e00", textColor: "white" },
+                            { nameJa: "東海道線", jsonPath: "route/tokaido.json", color: "#00b5e2", textColor: "white" }
+                        ]
+                    }
+                ],
+                types: [
+                    { id: "LOCAL", nameJa: "普通", bg: "#222222", fg: "#ffffff", stroke: "#ffffff" },
+                    { id: "RAPID", nameJa: "快速", bg: "#d9381e", fg: "#ffffff", stroke: "#000000" }
+                ]
+            };
+
+            globalRoutes["route/utsunomiya.json"] = {
+                transferPath: "transfer/utsunomiya_trans.json",
+                stations: [
+                    { id: "ST_01", nameJa: "大宮", nameKana: "おおみや", nameEn: "Omiya", nameZh: "大宫", nameKo: "오미야", number: "JU-07", typeTimes: { LOCAL: 0, RAPID: 0 }, transfers: ["LINE_SHINKANSEN", "LINE_SAIKYO"], homeGuides: [] },
+                    { id: "ST_02", nameJa: "さいたま新都心", nameKana: "さいたましんとしん", nameEn: "Saitama-Shintoshin", nameZh: "さいたま新都心", nameKo: "사이타마신도심", number: "JU-06", typeTimes: { LOCAL: 4, RAPID: null }, transfers: [], homeGuides: [] }
+                ]
+            };
+            
+            globalRoutes["route/tokaido.json"] = {
+                transferPath: "transfer/tokaido_trans.json",
+                stations: [
+                    { id: "ST_03", nameJa: "東京", nameKana: "とうきょう", nameEn: "Tokyo", nameZh: "东京", nameKo: "도쿄", number: "JT-01", typeTimes: { LOCAL: 30, RAPID: 25 }, transfers: ["LINE_YAMANOTE", "LINE_CHUO"], homeGuides: [] }
+                ]
+            };
+        }
+    </script>
+</body>
+</html>
