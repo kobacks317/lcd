@@ -1,0 +1,100 @@
+{
+  "lines": [
+    {
+      "id": "trf001",
+      "name": {
+        "ja": "京浜東北線",
+        "en": "Keihin-Tohoku Line",
+        "kana": "けいひんとうほくせん",
+        "zh": "京滨东北线",
+        "ko": "케이힌 도호쿠선"
+      },
+      "icon": "keihin.png",
+      "color": "#0066cc"
+    },
+    {
+      "id": "trf002",
+      "name": {
+        "ja": "武蔵野線",
+        "en": "Musashino Line",
+        "kana": "むさしののせん",
+        "zh": "武蔵野线",
+        "ko": "무사시노선"
+      },
+      "icon": "musashino.png",
+      "color": "#ff7f00"
+    },
+    {
+      "id": "trf003",
+      "name": {
+        "ja": "埼京線",
+        "en": "Saikyo Line",
+        "kana": "さいきょうせん",
+        "zh": "埼京线",
+        "ko": "사이교선"
+      },
+      "icon": "saikyo.png",
+      "color": "#9966cc"
+    },
+    {
+      "id": "trf004",
+      "name": {
+        "ja": "丸ノ内線",
+        "en": "Marunouchi Line",
+        "kana": "まるのうちせん",
+        "zh": "丸之内线",
+        "ko": "마루노우치선"
+      },
+      "icon": "marunouchi.png",
+      "color": "#ff0000"
+    },
+    {
+      "id": "trf005",
+      "name": {
+        "ja": "東西線",
+        "en": "Tozai Line",
+        "kana": "とうざいせん",
+        "zh": "东西线",
+        "ko": "도자이선"
+      },
+      "icon": "tozai.png",
+      "color": "#00b8e6"
+    },
+    {
+      "id": "trf006",
+      "name": {
+        "ja": "上越新幹線",
+        "en": "Joetsu Shinkansen",
+        "kana": "じょうえつしんかんせん",
+        "zh": "上越新干线",
+        "ko": "조에츠 신칸센"
+      },
+      "icon": "shinkansen.png",
+      "color": "#000000"
+    },
+    {
+      "id": "trf007",
+      "name": {
+        "ja": "副都心線",
+        "en": "Fukutoshin Line",
+        "kana": "ふくとしんせん",
+        "zh": "副都心线",
+        "ko": "부도심선"
+      },
+      "icon": "fukutoshin.png",
+      "color": "#9966cc"
+    },
+    {
+      "id": "trf008",
+      "name": {
+        "ja": "多摩都市モノレール",
+        "en": "Tama Monorail",
+        "kana": "たまとしものれーる",
+        "zh": "多摩都市单轨电车",
+        "ko": "다마 도시 모노레일"
+      },
+      "icon": "monorail.png",
+      "color": "#00c659"
+    }
+  ]
+}

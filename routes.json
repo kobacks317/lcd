@@ -1,0 +1,212 @@
+{
+  "route/line1.json": {
+    "name": "宇都宮線",
+    "color": "#ff7e00",
+    "stations": [
+      {
+        "id": "sta001",
+        "name": {
+          "ja": "大宮",
+          "en": "Omiya",
+          "kana": "おおみや",
+          "zh": "大宫",
+          "ko": "오미야"
+        },
+        "number": "JU-07",
+        "numberingStyle": "circle",
+        "typeTimes": {
+          "typ001": 0,
+          "typ002": 0,
+          "typ003": 0
+        },
+        "transfers": ["trf001"],
+        "homeGuides": [
+          {
+            "trackId": "1",
+            "length": "10両",
+            "stopPosition": "前寄り",
+            "elements": []
+          }
+        ]
+      },
+      {
+        "id": "sta002",
+        "name": {
+          "ja": "さいたま新都心",
+          "en": "Saitama-Shintoshin",
+          "kana": "さいたましんとしん",
+          "zh": "埼玉新都心",
+          "ko": "사이타마신도심"
+        },
+        "number": "JU-06",
+        "numberingStyle": "circle",
+        "typeTimes": {
+          "typ001": 4,
+          "typ002": null,
+          "typ003": 2
+        },
+        "transfers": [],
+        "homeGuides": []
+      },
+      {
+        "id": "sta003",
+        "name": {
+          "ja": "浦和",
+          "en": "Urawa",
+          "kana": "うらわ",
+          "zh": "浦和",
+          "ko": "우라와"
+        },
+        "number": "JU-05",
+        "numberingStyle": "circle",
+        "typeTimes": {
+          "typ001": 8,
+          "typ002": 6,
+          "typ003": 4
+        },
+        "transfers": ["trf002"],
+        "homeGuides": []
+      },
+      {
+        "id": "sta004",
+        "name": {
+          "ja": "赤羽",
+          "en": "Akabane",
+          "kana": "あかばね",
+          "zh": "赤羽",
+          "ko": "아카바네"
+        },
+        "number": "JU-04",
+        "numberingStyle": "circle",
+        "typeTimes": {
+          "typ001": 13,
+          "typ002": 10,
+          "typ003": 8
+        },
+        "transfers": ["trf001", "trf003"],
+        "homeGuides": []
+      },
+      {
+        "id": "sta005",
+        "name": {
+          "ja": "東京",
+          "en": "Tokyo",
+          "kana": "とうきょう",
+          "zh": "东京",
+          "ko": "도쿄"
+        },
+        "number": "JU-01",
+        "numberingStyle": "circle",
+        "typeTimes": {
+          "typ001": 20,
+          "typ002": 16,
+          "typ003": 14
+        },
+        "transfers": ["trf004", "trf005"],
+        "homeGuides": []
+      }
+    ]
+  },
+  "route/line2.json": {
+    "name": "高崎線",
+    "color": "#ff7e00",
+    "stations": [
+      {
+        "id": "sta101",
+        "name": {
+          "ja": "高崎",
+          "en": "Takasaki",
+          "kana": "たかさき",
+          "zh": "高崎",
+          "ko": "다카사키"
+        },
+        "number": "JT-01",
+        "numberingStyle": "circle",
+        "typeTimes": {
+          "typ001": 0,
+          "typ002": 0
+        },
+        "transfers": ["trf006"],
+        "homeGuides": []
+      },
+      {
+        "id": "sta102",
+        "name": {
+          "ja": "大宮",
+          "en": "Omiya",
+          "kana": "おおみや",
+          "zh": "大宫",
+          "ko": "오미야"
+        },
+        "number": "JT-09",
+        "numberingStyle": "circle",
+        "typeTimes": {
+          "typ001": 30,
+          "typ002": 25
+        },
+        "transfers": ["trf001"],
+        "homeGuides": []
+      }
+    ]
+  },
+  "route/line3.json": {
+    "name": "中央本線",
+    "color": "#ff0000",
+    "stations": [
+      {
+        "id": "sta201",
+        "name": {
+          "ja": "新宿",
+          "en": "Shinjuku",
+          "kana": "しんじゅく",
+          "zh": "新宿",
+          "ko": "신주쿠"
+        },
+        "number": "CL-01",
+        "numberingStyle": "circle",
+        "typeTimes": {
+          "typ001": 0,
+          "typ002": 0
+        },
+        "transfers": ["trf004", "trf007"],
+        "homeGuides": []
+      },
+      {
+        "id": "sta202",
+        "name": {
+          "ja": "中野",
+          "en": "Nakano",
+          "kana": "なかの",
+          "zh": "中野",
+          "ko": "나카노"
+        },
+        "number": "CL-02",
+        "numberingStyle": "circle",
+        "typeTimes": {
+          "typ001": 5,
+          "typ002": 4
+        },
+        "transfers": [],
+        "homeGuides": []
+      },
+      {
+        "id": "sta203",
+        "name": {
+          "ja": "立川",
+          "en": "Tachikawa",
+          "kana": "たちかわ",
+          "zh": "立川",
+          "ko": "다치카와"
+        },
+        "number": "CL-07",
+        "numberingStyle": "circle",
+        "typeTimes": {
+          "typ001": 30,
+          "typ002": 25
+        },
+        "transfers": ["trf008"],
+        "homeGuides": []
+      }
+    ]
+  }
+}

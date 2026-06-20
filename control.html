@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LCD 制御パネル - Railway Display Controller</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .panel {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+    .panel h2 {
+      border-bottom: 3px solid #667eea;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+      font-size: 18px;
+    }
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .tab-btn {
+      padding: 10px 15px;
+      border: none;
+      background: #f5f5f5;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .tab-btn.active {
+      background: white;
+      border-bottom-color: #667eea;
+      color: #667eea;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .form-group label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 5px;
+      font-size: 13px;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .form-group textarea {
+      min-height: 80px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+    }
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #5568d3;
+    }
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+      border: 1px solid #ddd;
+    }
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+    .btn-success {
+      background: #48bb78;
+      color: white;
+    }
+    .btn-success:hover {
+      background: #38a169;
+    }
+    .btn-danger {
+      background: #f56565;
+      color: white;
+    }
+    .btn-danger:hover {
+      background: #e53e3e;
+    }
+    .status-buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .status-btn {
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 13px;
+      transition: all 0.3s;
+      background: white;
+    }
+    .status-btn.active {
+      border-color: #667eea;
+      background: #667eea;
+      color: white;
+    }
+    .color-input {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .color-input input[type="color"] {
+      width: 50px;
+      height: 40px;
+      padding: 4px;
+      cursor: pointer;
+    }
+    .color-input input[type="text"] {
+      flex: 1;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+      margin-bottom: 15px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th {
+      background: #f5f5f5;
+      padding: 10px;
+      text-align: left;
+      border-bottom: 2px solid #ddd;
+      font-weight: 500;
+    }
+    td {
+      padding: 8px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    tr:hover {
+      background: #fafafa;
+    }
+    .input-small {
+      padding: 6px 8px;
+      font-size: 12px;
+    }
+    .alert {
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      font-size: 13px;
+    }
+    .alert-info {
+      background: #cce5ff;
+      color: #0066cc;
+      border: 1px solid #99ccff;
+    }
+    .alert-success {
+      background: #c6f6d5;
+      color: #22543d;
+      border: 1px solid #9ae6b4;
+    }
+    .language-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .lang-tag {
+      background: #f0f0f0;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .lang-tag button {
+      background: none;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      padding: 0;
+      font-size: 14px;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .footer {
+      grid-column: 1 / -1;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .viewer-link {
+      padding: 10px 20px;
+      background: #48bb78;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .viewer-link:hover {
+      background: #38a169;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🚆 LCD 制御パネル - Railway Display Controller</h1>
+  <p>列車案内ディスプレイ制御システム</p>
+</div>
+
+<div class="container">
+  <!-- 左パネル: 運行制御 -->
+  <div class="panel">
+    <h2>📊 運行制御</h2>
+    
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(event, 'operation-basic')">基本</button>
+      <button class="tab-btn" onclick="switchTab(event, 'operation-advanced')">詳細</button>
+    </div>
+
+    <!-- 基本タブ -->
+    <div id="operation-basic" class="tab-content active">
+      <div class="form-group">
+        <label>運行状態</label>
+        <div class="status-buttons">
+          <button class="status-btn active" onclick="setOperationState('running')">走行中</button>
+          <button class="status-btn" onclick="setOperationState('arriving')">到着中</button>
+          <button class="status-btn" onclick="setOperationState('stopping')">停車中</button>
+          <button class="status-btn" onclick="setOperationState('departing')">発車中</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>系統選択</label>
+        <select id="systemSelect" onchange="onSystemChange()">
+          <option value="">--選択--</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>列車種別</label>
+        <select id="trainTypeSelect" onchange="syncViewers()">
+          <option value="">--選択--</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>現在駅</label>
+        <select id="currentStationSelect" onchange="syncViewers()">
+          <option value="">--選択--</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>ドア状態</label>
+        <select id="doorState" onchange="syncViewers()">
+          <option value="false">閉じている</option>
+          <option value="true">開いている</option>
+        </select>
+      </div>
+
+      <button class="btn-primary" onclick="syncViewers()">ビューアに送信</button>
+    </div>
+
+    <!-- 詳細タブ -->
+    <div id="operation-advanced" class="tab-content">
+      <div class="form-group">
+        <label>全駅臨時制御マトリクス</label>
+        <div class="table-wrapper">
+          <table id="stationOverridesTable">
+            <thead>
+              <tr>
+                <th>駅</th>
+                <th>停車</th>
+                <th>通過</th>
+                <th>指定番線</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <button class="btn-secondary" onclick="resetStationOverrides()">リセット</button>
+    </div>
+  </div>
+
+  <!-- 右パネル: マスターデータ編集 -->
+  <div class="panel">
+    <h2>⚙️ マスターデータ編集</h2>
+    
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(event, 'master-train')">列車・系統</button>
+      <button class="tab-btn" onclick="switchTab(event, 'master-route')">路線・駅</button>
+      <button class="tab-btn" onclick="switchTab(event, 'master-transfer')">乗換</button>
+      <button class="tab-btn" onclick="switchTab(event, 'master-design')">デザイン</button>
+      <button class="tab-btn" onclick="switchTab(event, 'master-numbering')">ナンバリング</button>
+    </div>
+
+    <!-- 列車・系統タブ -->
+    <div id="master-train" class="tab-content active">
+      <div class="form-group">
+        <label>使用言語</label>
+        <div class="language-list" id="languageList"></div>
+        <button class="btn-secondary" onclick="openLanguageModal()">言語追加</button>
+      </div>
+
+      <div class="alert alert-info">
+        系統管理：新規系統追加、種別カラー設定
+      </div>
+
+      <div class="form-group">
+        <label>系統名（日本語）</label>
+        <input type="text" placeholder="例: 東海道線・上野東京ライン">
+      </div>
+
+      <div class="form-group">
+        <label>種別名（日本語）</label>
+        <input type="text" placeholder="例: 快速">
+      </div>
+
+      <div class="form-group">
+        <label>種別背景色</label>
+        <div class="color-input">
+          <input type="color" value="#d9381e">
+          <input type="text" value="#d9381e" readonly>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>種別文字色</label>
+        <div class="color-input">
+          <input type="color" value="#ffffff">
+          <input type="text" value="#ffffff" readonly>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="addTrainType()">種別を追加</button>
+    </div>
+
+    <!-- 路線・駅タブ -->
+    <div id="master-route" class="tab-content">
+      <div class="form-group">
+        <label>編集する路線（JSON ファイル）</label>
+        <select id="routeSelect" onchange="loadRouteData()">
+          <option value="">--選択--</option>
+          <option value="route/line1.json">路線1</option>
+          <option value="route/line2.json">路線2</option>
+        </select>
+      </div>
+
+      <div class="alert alert-info">
+        駅情報：ナンバリング、所要時間、乗換案内、ホーム案内
+      </div>
+
+      <div class="form-group">
+        <label>駅リスト</label>
+        <div class="table-wrapper">
+          <table id="stationListTable">
+            <thead>
+              <tr>
+                <th>駅名</th>
+                <th>ナンバリング</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="addStation()">駅を追加</button>
+    </div>
+
+    <!-- 乗換路線タブ -->
+    <div id="master-transfer" class="tab-content">
+      <div class="alert alert-info">
+        乗換路線の定義と管理
+      </div>
+
+      <div class="form-group">
+        <label>乗換路線名</label>
+        <input type="text" placeholder="例: 京浜東北線">
+      </div>
+
+      <div class="form-group">
+        <label>路線アイコン</label>
+        <input type="text" placeholder="例: keihin.png">
+      </div>
+
+      <button class="btn-primary" onclick="addTransferLine()">乗換路線を追加</button>
+    </div>
+
+    <!-- デザイン定義タブ -->
+    <div id="master-design" class="tab-content">
+      <div class="form-group">
+        <label>運行状態別スライドショー設定</label>
+      </div>
+
+      <div class="form-group">
+        <label>走行中 (running)</label>
+        <textarea placeholder="JSON 形式で入力&#10;例: [{type: &quot;wide_route_map&quot;, duration: 5}]"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>到着中 (arriving)</label>
+        <textarea placeholder="JSON 形式で入力"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>停車中 (stopping)</label>
+        <textarea placeholder="JSON 形式で入力"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>発車中 (departing)</label>
+        <textarea placeholder="JSON 形式で入力"></textarea>
+      </div>
+
+      <button class="btn-primary" onclick="saveDesignDefinition()">デザイン設定を保存</button>
+    </div>
+
+    <!-- ナンバリングスタイルタブ -->
+    <div id="master-numbering" class="tab-content">
+      <div class="form-group">
+        <label>スタイル</label>
+        <select>
+          <option>circle</option>
+          <option>square</option>
+          <option>inline</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>文字色</label>
+        <div class="color-input">
+          <input type="color" value="#ffffff">
+          <input type="text" value="#ffffff" readonly>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>背景色</label>
+        <div class="color-input">
+          <input type="color" value="#ff7e00">
+          <input type="text" value="#ff7e00" readonly>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="saveNumberingStyle()">ナンバリング設定を保存</button>
+    </div>
+  </div>
+
+  <!-- フッター -->
+  <div class="footer">
+    <div>
+      <button class="btn-secondary" onclick="exportAllJSON()">JSON エクスポート</button>
+      <button class="btn-secondary" onclick="importJSON()">JSON インポート</button>
+    </div>
+    <button class="viewer-link" onclick="openViewer()">🖥️ LCD ビューアを開く</button>
+  </div>
+</div>
+
+<!-- 言語追加モーダル -->
+<div id="languageModal" class="modal">
+  <div class="modal-content">
+    <h3>言語を追加</h3>
+    <div class="form-group">
+      <label>言語コード</label>
+      <input type="text" id="languageCode" placeholder="例: zh（中国語）">
+    </div>
+    <div class="form-group">
+      <label>言語名</label>
+      <input type="text" id="languageName" placeholder="例: 中国語（簡体字）">
+    </div>
+    <div class="button-group">
+      <button class="btn-primary" onclick="addLanguage()">追加</button>
+      <button class="btn-secondary" onclick="closeLanguageModal()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// =====================================
+// グローバル状態管理
+// =====================================
+
+const globalState = {
+  currentState: 'running',
+  currentSystemId: null,
+  currentTrainTypeId: null,
+  currentStationIndex: 0,
+  displayLanguages: ['ja', 'en', 'kana'],
+  displayInterval: 3,
+  doorOpen: false,
+  stationOverrides: {},
+  viewerWindow: null
+};
+
+const masterData = {
+  train: {
+    systems: [],
+    types: []
+  },
+  routes: {},
+  transfer: {
+    lines: []
+  },
+  design: {
+    mainArea: {
+      languages: ['ja', 'en', 'kana'],
+      interval: 3,
+      rotationOrder: ['ja', 'en', 'kana']
+    },
+    infoArea: {
+      states: {
+        running: [
+          { type: 'wide_route_map', duration: 5 },
+          { type: 'detailed_route_map', duration: 5 }
+        ],
+        arriving: [
+          { type: 'home_guide', duration: 5 }
+        ],
+        stopping: [
+          { type: 'home_guide', duration: 8 }
+        ],
+        departing: [
+          { type: 'wide_route_map', duration: 5 }
+        ]
+      }
+    }
+  },
+  numbering: {
+    style: 'circle',
+    color: '#ffffff',
+    bgColor: '#ff7e00'
+  }
+};
+
+// =====================================
+// UI イベントハンドラー
+// =====================================
+
+function switchTab(event, tabName) {
+  // アクティブなタブボタンを全て削除
+  event.target.parentElement.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+
+  // コンテンツを切り替え
+  const parent = event.target.parentElement.nextElementSibling;
+  let current = parent;
+  while (current && !current.classList.contains('tab-content')) {
+    current = current.nextElementSibling;
+  }
+  
+  // 同じグループの全タブコンテンツを非表示
+  let sibling = parent.parentElement.querySelector('.tab-content');
+  while (sibling && sibling.classList.contains('tab-content')) {
+    sibling.classList.remove('active');
+    sibling = sibling.nextElementSibling;
+  }
+
+  // 指定されたタブを表示
+  document.getElementById(tabName).classList.add('active');
+}
+
+function setOperationState(state) {
+  globalState.currentState = state;
+  
+  // UI 更新
+  document.querySelectorAll('.status-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+
+  syncViewers();
+}
+
+function onSystemChange() {
+  const systemSelect = document.getElementById('systemSelect');
+  globalState.currentSystemId = systemSelect.value;
+
+  // 列車種別とを駅を再読み込み
+  updateTrainTypeSelect();
+  updateCurrentStationSelect();
+  updateStationOverridesTable();
+}
+
+function updateTrainTypeSelect() {
+  const select = document.getElementById('trainTypeSelect');
+  select.innerHTML = '<option value="">--選択--</option>';
+  
+  masterData.train.types.forEach(type => {
+    const option = document.createElement('option');
+    option.value = type.id;
+    option.textContent = type.name.ja || type.id;
+    select.appendChild(option);
+  });
+}
+
+function updateCurrentStationSelect() {
+  const select = document.getElementById('currentStationSelect');
+  select.innerHTML = '<option value="">--選択--</option>';
+
+  if (!globalState.currentSystemId) return;
+
+  const system = masterData.train.systems.find(s => s.id === globalState.currentSystemId);
+  if (!system) return;
+
+  // 複数路線から駅を集約
+  system.routes.forEach(route => {
+    const routeData = masterData.routes[route.lineId];
+    if (routeData && routeData.stations) {
+      routeData.stations.forEach((station, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = station.name.ja || station.id;
+        select.appendChild(option);
+      });
+    }
+  });
+}
+
+function updateStationOverridesTable() {
+  const tbody = document.querySelector('#stationOverridesTable tbody');
+  tbody.innerHTML = '';
+
+  if (!globalState.currentSystemId) return;
+
+  const system = masterData.train.systems.find(s => s.id === globalState.currentSystemId);
+  if (!system) return;
+
+  const allStations = [];
+  system.routes.forEach(route => {
+    const routeData = masterData.routes[route.lineId];
+    if (routeData && routeData.stations) {
+      allStations.push(...routeData.stations);
+    }
+  });
+
+  allStations.forEach(station => {
+    const tr = document.createElement('tr');
+    const override = globalState.stationOverrides[station.id] || { stop: false, pass: false, track: '' };
+
+    tr.innerHTML = `
+      <td>${station.name.ja}</td>
+      <td><input type="checkbox" ${override.stop ? 'checked' : ''} onchange="updateStationOverride('${station.id}', 'stop', this.checked)"></td>
+      <td><input type="checkbox" ${override.pass ? 'checked' : ''} onchange="updateStationOverride('${station.id}', 'pass', this.checked)"></td>
+      <td><input type="text" class="input-small" value="${override.track || ''}" onchange="updateStationOverride('${station.id}', 'track', this.value)"></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function updateStationOverride(stationId, key, value) {
+  if (!globalState.stationOverrides[stationId]) {
+    globalState.stationOverrides[stationId] = { stop: false, pass: false, track: '' };
+  }
+  globalState.stationOverrides[stationId][key] = value;
+  syncViewers();
+}
+
+function resetStationOverrides() {
+  globalState.stationOverrides = {};
+  updateStationOverridesTable();
+  syncViewers();
+}
+
+function addTrainType() {
+  const nameJa = document.querySelectorAll('#master-train input')[1].value;
+  if (!nameJa) {
+    alert('種別名を入力してください');
+    return;
+  }
+
+  const newType = {
+    id: `typ${String(masterData.train.types.length + 1).padStart(3, '0')}`,
+    name: { ja: nameJa, en: '', kana: '', zh: '', ko: '' },
+    bg: '#d9381e',
+    fg: '#ffffff',
+    stroke: '#ffffff'
+  };
+
+  masterData.train.types.push(newType);
+  updateTrainTypeSelect();
+  alert(`種別 "${nameJa}" を追加しました（ID: ${newType.id}）`);
+}
+
+function addStation() {
+  alert('駅追加機能は実装予定です');
+}
+
+function addTransferLine() {
+  alert('乗換路線追加機能は実装予定です');
+}
+
+function saveDesignDefinition() {
+  alert('デザイン設定保存機能は実装予定です');
+}
+
+function saveNumberingStyle() {
+  alert('ナンバリング設定保存機能は実装予定です');
+}
+
+function loadRouteData() {
+  alert('路線データロード機能は実装予定です');
+}
+
+function openLanguageModal() {
+  document.getElementById('languageModal').classList.add('active');
+}
+
+function closeLanguageModal() {
+  document.getElementById('languageModal').classList.remove('active');
+}
+
+function addLanguage() {
+  const code = document.getElementById('languageCode').value;
+  const name = document.getElementById('languageName').value;
+
+  if (!code || !name) {
+    alert('言語コードと言語名を入力してください');
+    return;
+  }
+
+  if (!globalState.displayLanguages.includes(code)) {
+    globalState.displayLanguages.push(code);
+    renderLanguageList();
+    closeLanguageModal();
+    document.getElementById('languageCode').value = '';
+    document.getElementById('languageName').value = '';
+  }
+}
+
+function removeLanguage(code) {
+  globalState.displayLanguages = globalState.displayLanguages.filter(l => l !== code);
+  renderLanguageList();
+}
+
+function renderLanguageList() {
+  const list = document.getElementById('languageList');
+  list.innerHTML = '';
+
+  const langNames = { ja: '日本語', en: '英語', kana: 'ひらがな', zh: '中国語', ko: '韓国語' };
+
+  globalState.displayLanguages.forEach(code => {
+    const tag = document.createElement('div');
+    tag.className = 'lang-tag';
+    tag.innerHTML = `
+      ${langNames[code] || code}
+      <button onclick="removeLanguage('${code}')">×</button>
+    `;
+    list.appendChild(tag);
+  });
+}
+
+// =====================================
+// postMessage 連携
+// =====================================
+
+function createSyncPacket() {
+  return {
+    operation: {
+      currentState: globalState.currentState,
+      currentSystemId: globalState.currentSystemId,
+      currentTrainTypeId: globalState.currentTrainTypeId,
+      currentStationIndex: globalState.currentStationIndex,
+      displayLanguages: globalState.displayLanguages,
+      displayInterval: globalState.displayInterval,
+      doorOpen: globalState.doorOpen === 'true' || globalState.doorOpen === true,
+      stationOverrides: globalState.stationOverrides
+    },
+    masterData: masterData
+  };
+}
+
+function syncViewers() {
+  const packet = createSyncPacket();
+
+  // 開いている LCD ビューアにデータを送信
+  if (globalState.viewerWindow && !globalState.viewerWindow.closed) {
+    globalState.viewerWindow.postMessage(packet, '*');
+  }
+
+  console.log('Sync packet sent:', packet);
+}
+
+function exportAllJSON() {
+  const data = {
+    train: masterData.train,
+    transfer: masterData.transfer,
+    design: masterData.design,
+    numbering: masterData.numbering
+  };
+
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'control-data.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importJSON() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target.result);
+        masterData.train = data.train || masterData.train;
+        masterData.transfer = data.transfer || masterData.transfer;
+        masterData.design = data.design || masterData.design;
+        masterData.numbering = data.numbering || masterData.numbering;
+        alert('JSON をインポートしました');
+        updateTrainTypeSelect();
+        syncViewers();
+      } catch (err) {
+        alert('JSON の解析に失敗しました: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function openViewer() {
+  globalState.viewerWindow = window.open('viewer.html', 'lcdViewer', 'width=800,height=600');
+  
+  // ビューアが読み込まれた後、データを送信
+  setTimeout(() => {
+    syncViewers();
+  }, 500);
+}
+
+// =====================================
+// 初期化
+// =====================================
+
+function initializeData() {
+  // サンプルデータを読み込み
+  masterData.train.systems = [
+    {
+      id: 'sys001',
+      name: {
+        ja: '東海道線・上野東京ライン',
+        en: 'Tokaido-Line',
+        kana: 'とうかいどうせん',
+        zh: '东海道线',
+        ko: '도카이도선'
+      },
+      routes: [
+        { lineId: 'route/line1.json', name: '宇都宮線', color: '#ff7e00' }
+      ],
+      defaultTrainType: 'typ001'
+    }
+  ];
+
+  masterData.train.types = [
+    {
+      id: 'typ001',
+      name: {
+        ja: '普通',
+        en: 'Local',
+        kana: 'ふつう',
+        zh: '普通',
+        ko: '보통'
+      },
+      bg: '#222222',
+      fg: '#ffffff',
+      stroke: '#ffffff'
+    },
+    {
+      id: 'typ002',
+      name: {
+        ja: '快速',
+        en: 'Rapid',
+        kana: 'かいそく',
+        zh: '快速',
+        ko: '쾌속'
+      },
+      bg: '#d9381e',
+      fg: '#ffffff',
+      stroke: '#000000'
+    }
+  ];
+
+  masterData.routes['route/line1.json'] = {
+    stations: [
+      {
+        id: 'sta001',
+        name: {
+          ja: '大宮',
+          en: 'Omiya',
+          kana: 'おおみや',
+          zh: '大宫',
+          ko: '오미야'
+        },
+        number: 'JU-07',
+        numberingStyle: 'circle',
+        typeTimes: { typ001: 0, typ002: 0 },
+        transfers: ['trf001'],
+        homeGuides: []
+      },
+      {
+        id: 'sta002',
+        name: {
+          ja: 'さいたま新都心',
+          en: 'Saitama-Shintoshin',
+          kana: 'さいたましんとしん',
+          zh: '埼玉新都心',
+          ko: '사이타마신도심'
+        },
+        number: 'JU-06',
+        numberingStyle: 'circle',
+        typeTimes: { typ001: 4, typ002: null },
+        transfers: [],
+        homeGuides: []
+      }
+    ]
+  };
+
+  masterData.transfer.lines = [
+    {
+      id: 'trf001',
+      name: {
+        ja: '京浜東北線',
+        en: 'Keihin-Tohoku Line',
+        kana: 'けいひんとうほくせん',
+        zh: '京滨东北线',
+        ko: '케이힌 도호쿠선'
+      },
+      icon: 'keihin.png'
+    }
+  ];
+
+  // UI を更新
+  updateTrainTypeSelect();
+  renderLanguageList();
+  
+  // システムセレクトを更新
+  const systemSelect = document.getElementById('systemSelect');
+  systemSelect.innerHTML = '<option value="">--選択--</option>';
+  masterData.train.systems.forEach(system => {
+    const option = document.createElement('option');
+    option.value = system.id;
+    option.textContent = system.name.ja;
+    systemSelect.appendChild(option);
+  });
+}
+
+// ページロード時に初期化
+window.addEventListener('DOMContentLoaded', initializeData);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,44 @@
+{
+  "styles": [
+    {
+      "id": "style_circle",
+      "name": "Circle",
+      "style": "circle",
+      "color": "#ffffff",
+      "bgColor": "#ff7e00",
+      "description": "丸囲み（オレンジ背景）"
+    },
+    {
+      "id": "style_square",
+      "name": "Square",
+      "style": "square",
+      "color": "#ffffff",
+      "bgColor": "#ff7e00",
+      "description": "四角囲み（オレンジ背景）"
+    },
+    {
+      "id": "style_inline",
+      "name": "Inline",
+      "style": "inline",
+      "color": "#ffffff",
+      "bgColor": "transparent",
+      "description": "インライン表示（背景なし）"
+    },
+    {
+      "id": "style_red_circle",
+      "name": "Red Circle",
+      "style": "circle",
+      "color": "#ffffff",
+      "bgColor": "#ff0000",
+      "description": "丸囲み（赤背景）"
+    },
+    {
+      "id": "style_blue_circle",
+      "name": "Blue Circle",
+      "style": "circle",
+      "color": "#ffffff",
+      "bgColor": "#0066cc",
+      "description": "丸囲み（青背景）"
+    }
+  ]
+}

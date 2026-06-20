@@ -1,0 +1,77 @@
+{
+  "mainArea": {
+    "languages": ["ja", "en", "kana"],
+    "interval": 3,
+    "rotationOrder": ["ja", "en", "kana"],
+    "displayFields": ["type", "destination", "currentStation", "number", "time"]
+  },
+  "infoArea": {
+    "states": {
+      "running": [
+        {
+          "type": "wide_route_map",
+          "duration": 5,
+          "description": "広域路線図"
+        },
+        {
+          "type": "detailed_route_map",
+          "duration": 5,
+          "description": "詳細路線図"
+        },
+        {
+          "type": "transfer_guide",
+          "duration": 5,
+          "description": "乗換案内"
+        },
+        {
+          "type": "home_guide",
+          "duration": 5,
+          "description": "ホーム案内"
+        }
+      ],
+      "arriving": [
+        {
+          "type": "home_guide",
+          "duration": 5,
+          "description": "ホーム案内"
+        },
+        {
+          "type": "door_guide",
+          "duration": 5,
+          "description": "ドア案内"
+        }
+      ],
+      "stopping": [
+        {
+          "type": "home_guide",
+          "duration": 8,
+          "description": "ホーム案内"
+        }
+      ],
+      "stopping_door_closed": [
+        {
+          "type": "wide_route_map",
+          "duration": 5,
+          "description": "広域路線図"
+        },
+        {
+          "type": "detailed_route_map",
+          "duration": 5,
+          "description": "詳細路線図"
+        }
+      ],
+      "departing": [
+        {
+          "type": "wide_route_map",
+          "duration": 5,
+          "description": "広域路線図"
+        },
+        {
+          "type": "detailed_route_map",
+          "duration": 5,
+          "description": "詳細路線図"
+        }
+      ]
+    }
+  }
+}

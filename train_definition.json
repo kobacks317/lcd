@@ -1,0 +1,89 @@
+{
+  "systems": [
+    {
+      "id": "sys001",
+      "name": {
+        "ja": "東海道線・上野東京ライン",
+        "en": "Tokaido-Line",
+        "kana": "とうかいどうせん",
+        "zh": "东海道线",
+        "ko": "도카이도선"
+      },
+      "routes": [
+        {
+          "lineId": "route/line1.json",
+          "name": "宇都宮線",
+          "color": "#ff7e00",
+          "textColor": "white"
+        },
+        {
+          "lineId": "route/line2.json",
+          "name": "高崎線",
+          "color": "#ff7e00",
+          "textColor": "white"
+        }
+      ],
+      "defaultTrainType": "typ001"
+    },
+    {
+      "id": "sys002",
+      "name": {
+        "ja": "中央線",
+        "en": "Chuo-Line",
+        "kana": "ちゅうおうせん",
+        "zh": "中央线",
+        "ko": "주오선"
+      },
+      "routes": [
+        {
+          "lineId": "route/line3.json",
+          "name": "中央本線",
+          "color": "#ff0000",
+          "textColor": "white"
+        }
+      ],
+      "defaultTrainType": "typ001"
+    }
+  ],
+  "types": [
+    {
+      "id": "typ001",
+      "name": {
+        "ja": "普通",
+        "en": "Local",
+        "kana": "ふつう",
+        "zh": "普通",
+        "ko": "보통"
+      },
+      "bg": "#222222",
+      "fg": "#ffffff",
+      "stroke": "#ffffff"
+    },
+    {
+      "id": "typ002",
+      "name": {
+        "ja": "快速",
+        "en": "Rapid",
+        "kana": "かいそく",
+        "zh": "快速",
+        "ko": "쾌속"
+      },
+      "bg": "#d9381e",
+      "fg": "#ffffff",
+      "stroke": "#000000"
+    },
+    {
+      "id": "typ003",
+      "name": {
+        "ja": "通勤快速",
+        "en": "Commuter Rapid",
+        "kana": "つうきんかいそく",
+        "zh": "通勤快速",
+        "ko": "통근쾌속"
+      },
+      "bg": "#0066cc",
+      "fg": "#ffffff",
+      "stroke": "#ffffff"
+    }
+  ]
+}

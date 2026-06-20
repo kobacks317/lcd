@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LCD ビューア - Railway Display</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      background: #000;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      overflow: hidden;
+    }
+
+    .lcd-container {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #000;
+    }
+
+    /* =====================================
+       メインエリア（上部）
+       ===================================== */
+    .main-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      border-bottom: 3px solid #ffff00;
+      padding: 20px;
+    }
+
+    .main-content {
+      text-align: center;
+      animation: fadeIn 0.5s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .status-line {
+      font-size: 18px;
+      color: #ffff00;
+      margin-bottom: 10px;
+      min-height: 24px;
+    }
+
+    .train-type {
+      display: inline-block;
+      padding: 8px 12px;
+      margin-right: 15px;
+      border: 2px solid #fff;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .destination {
+      font-size: 24px;
+      font-weight: bold;
+      color: #ffff00;
+      margin: 15px 0;
+    }
+
+    .station-info {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      margin: 10px 0;
+      font-size: 20px;
+      color: #ffff00;
+    }
+
+    .station-number {
+      display: inline-block;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: 3px solid #ffff00;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    /* =====================================
+       インフォメーションエリア（下部）
+       ===================================== */
+    .info-area {
+      flex: 0.8;
+      background: #111;
+      border-top: 3px solid #ffff00;
+      padding: 20px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .info-slide {
+      width: 100%;
+      height: 100%;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      animation: slideIn 0.5s;
+    }
+
+    .info-slide.active {
+      display: flex;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .info-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #ffff00;
+      margin-bottom: 15px;
+    }
+
+    .info-content {
+      font-size: 14px;
+      color: #0f0;
+      text-align: center;
+      line-height: 1.8;
+    }
+
+    /* デバッグパネル */
+    .debug-panel {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.9);
+      border: 1px solid #0f0;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      color: #0f0;
+      max-width: 300px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+    }
+
+    .debug-panel h4 {
+      color: #ffff00;
+      margin-bottom: 5px;
+    }
+
+    .debug-item {
+      margin: 3px 0;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+
+<div class="lcd-container">
+  <!-- メインエリア -->
+  <div class="main-area">
+    <div class="main-content">
+      <div class="status-line" id="statusLine">接続待機中...</div>
+      <div style="margin: 20px 0;">
+        <div class="train-type" id="trainType">-- 種別 --</div>
+      </div>
+      <div class="destination" id="destination">-- 行き先 --</div>
+      <div class="station-info">
+        <div class="station-number" id="stationNumber">--</div>
+        <div id="stationName">-- 駅名 --</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- インフォメーションエリア -->
+  <div class="info-area">
+    <div class="info-slide active">
+      <div class="info-title">インフォメーション</div>
+      <div class="info-content" id="infoContent">
+        制御パネルから情報を受け取り待機中です。<br>
+        リアルタイムでスライドショーが表示されます。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- デバッグパネル -->
+<div class="debug-panel">
+  <h4>Debug Info</h4>
+  <div id="debugInfo">
+    <div class="debug-item">接続待機中...</div>
+  </div>
+</div>
+
+<script>
+// =====================================
+// グローバル状態
+// =====================================
+
+let currentOperation = null;
+let currentMasterData = null;
+let currentInfoIndex = 0;
+let infoSlideTimer = null;
+
+const languageNames = {
+  ja: '日本語',
+  en: '英語',
+  kana: 'ひらがな',
+  zh: '中国語',
+  ko: '韓国語'
+};
+
+// =====================================
+// postMessage リスナー
+// =====================================
+
+window.addEventListener('message', (event) => {
+  try {
+    const packet = event.data;
+
+    if (packet.operation && packet.masterData) {
+      currentOperation = packet.operation;
+      currentMasterData = packet.masterData;
+
+      updateDisplay();
+      startInfoSlideshow();
+      debugLog('パケット受信 OK');
+    }
+  } catch (err) {
+    debugLog('エラー: ' + err.message);
+  }
+});
+
+// =====================================
+// 表示更新
+// =====================================
+
+function updateDisplay() {
+  if (!currentOperation || !currentMasterData) return;
+
+  const {
+    currentState,
+    currentSystemId,
+    currentTrainTypeId,
+    currentStationIndex,
+    displayLanguages,
+    doorOpen
+  } = currentOperation;
+
+  // システムと駅情報を取得
+  const system = currentMasterData.train.systems.find(s => s.id === currentSystemId);
+  if (!system) return;
+
+  // 複数路線から駅インデックスを取得
+  let allStations = [];
+  system.routes.forEach(route => {
+    const routeData = currentMasterData.routes[route.lineId];
+    if (routeData && routeData.stations) {
+      allStations.push(...routeData.stations);
+    }
+  });
+
+  const currentStation = allStations[currentStationIndex];
+  const trainType = currentMasterData.train.types.find(t => t.id === currentTrainTypeId);
+
+  if (!currentStation || !trainType) {
+    debugLog('駅または種別が見つかりません');
+    return;
+  }
+
+  // ====== メインエリア更新 ======
+
+  // ステータスラインの更新（言語順番に表示）
+  const currentLang = displayLanguages[Math.floor(Date.now() / 3000) % displayLanguages.length];
+  updateMainArea(currentState, currentLang, currentStation, trainType, system);
+
+  // 種別バッジの色設定
+  const trainTypeEl = document.getElementById('trainType');
+  trainTypeEl.style.backgroundColor = trainType.bg;
+  trainTypeEl.style.color = trainType.fg;
+  trainTypeEl.style.borderColor = trainType.fg;
+  trainTypeEl.textContent = trainType.name[currentLang] || trainType.name.ja;
+
+  // 行き先
+  const destination = document.getElementById('destination');
+  const lastRoute = system.routes[system.routes.length - 1];
+  destination.textContent = `${lastRoute.name}ゆき`;
+
+  // 駅情報
+  const stationNumber = document.getElementById('stationNumber');
+  stationNumber.textContent = currentStation.number;
+
+  const stationName = document.getElementById('stationName');
+  const statusPrefix = getStatusPrefix(currentState, currentLang);
+  stationName.textContent = `${statusPrefix}${currentStation.name[currentLang] || currentStation.name.ja}`;
+
+  debugLog(`
+    状態: ${currentState}
+    駅: ${currentStation.name.ja}
+    種別: ${trainType.name.ja}
+    言語: ${currentLang}
+  `);
+}
+
+function getStatusPrefix(state, lang) {
+  const prefixes = {
+    running: { ja: 'つぎは', en: 'Next', kana: 'つぎは', zh: '下一站', ko: '다음은' },
+    arriving: { ja: 'まもなく', en: 'Arriving at', kana: 'まもなく', zh: '即将到达', ko: '곧 도착' },
+    stopping: { ja: 'ただいま', en: 'Now stopping at', kana: 'ただいま', zh: '现在', ko: '현재' },
+    departing: { ja: 'ただいま', en: 'Now departing from', kana: 'ただいま', zh: '现在', ko: '현재' }
+  };
+
+  return (prefixes[state] && prefixes[state][lang]) ? prefixes[state][lang] + ' ' : '';
+}
+
+function updateMainArea(state, lang, station, trainType, system) {
+  const statusLine = document.getElementById('statusLine');
+  
+  const statusTexts = {
+    running: `つぎは ${station.name[lang] || station.name.ja} です`,
+    arriving: `まもなく ${station.name[lang] || station.name.ja} に到着します`,
+    stopping: `ただいま ${station.name[lang] || station.name.ja} に停車中です`,
+    departing: `${station.name[lang] || station.name.ja} から発車します`
+  };
+
+  statusLine.textContent = statusTexts[state] || statusTexts.running;
+}
+
+// =====================================
+// インフォメーションエリア スライドショー
+// =====================================
+
+function startInfoSlideshow() {
+  if (!currentOperation || !currentMasterData) return;
+
+  const infoConfig = currentMasterData.design.infoArea.states[currentOperation.currentState] || [];
+  
+  if (infoConfig.length === 0) {
+    debugLog('スライド情報なし');
+    return;
+  }
+
+  // 前のタイマーをクリア
+  if (infoSlideTimer) clearTimeout(infoSlideTimer);
+
+  currentInfoIndex = 0;
+  showNextSlide(infoConfig);
+}
+
+function showNextSlide(infoConfig) {
+  const slideInfo = infoConfig[currentInfoIndex % infoConfig.length];
+  
+  const infoContent = document.getElementById('infoContent');
+  infoContent.textContent = `【${slideInfo.type}】 ${slideInfo.duration}秒表示`;
+
+  // 次のスライドのタイマー設定
+  const duration = (slideInfo.duration || 5) * 1000;
+  currentInfoIndex++;
+
+  infoSlideTimer = setTimeout(() => {
+    showNextSlide(infoConfig);
+  }, duration);
+
+  debugLog(`スライド: ${slideInfo.type} (${slideInfo.duration}秒)`);
+}
+
+// =====================================
+// デバッグパネル
+// =====================================
+
+function debugLog(message) {
+  const debugInfo = document.getElementById('debugInfo');
+  const now = new Date().toLocaleTimeString('ja-JP');
+  
+  const item = document.createElement('div');
+  item.className = 'debug-item';
+  item.textContent = `[${now}] ${message}`;
+  
+  debugInfo.insertBefore(item, debugInfo.firstChild);
+
+  // 古いログを削除（最大20行まで）
+  while (debugInfo.children.length > 20) {
+    debugInfo.removeChild(debugInfo.lastChild);
+  }
+}
+
+// =====================================
+// 初期化
+// =====================================
+
+window.addEventListener('load', () => {
+  debugLog('LCD ビューア起動');
+  debugLog('control.html からの接続を待機中...');
+  
+  // 親ウィンドウにデータをリクエスト
+  if (window.opener && !window.opener.closed) {
+    window.opener.postMessage({ type: 'viewer-ready' }, '*');
+  }
+});
+
+// ページを閉じる際
+window.addEventListener('beforeunload', () => {
+  if (infoSlideTimer) clearTimeout(infoSlideTimer);
+});
+</script>
+
+</body>
+</html>
