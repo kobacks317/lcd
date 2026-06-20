@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <rect width="48" height="48" rx="6" fill="#00BCD4"/>
+  <text x="24" y="22" text-anchor="middle" font-size="16" font-weight="bold" fill="white" font-family="sans-serif">WC</text>
+  <text x="24" y="36" text-anchor="middle" font-size="10" fill="white" font-family="sans-serif">トイレ</text>
+</svg>

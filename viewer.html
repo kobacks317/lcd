@@ -6,414 +6,357 @@
   <title>LCD ビューア - Railway Display</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    body {
-      background: #000;
-      color: #fff;
-      font-family: 'Courier New', monospace;
-      overflow: hidden;
-    }
+    body { background: #000; overflow: hidden; }
 
     .lcd-container {
       width: 100vw;
       height: 100vh;
       display: flex;
       flex-direction: column;
+    }
+
+    #mainAreaWrap {
+      flex-shrink: 0;
+      overflow: hidden;
+      border-bottom: 3px solid #ffff00;
       background: #000;
     }
 
-    /* =====================================
-       メインエリア（上部）
-       ===================================== */
-    .main-area {
-      flex: 1;
+    #mainAreaWrap iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    /* メインエリアがない場合のフォールバック表示 */
+    .main-fallback {
+      width: 100%;
+      height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #000;
-      border-bottom: 3px solid #ffff00;
+      flex-direction: column;
+      gap: 12px;
+      color: #ffff00;
+      font-family: 'Courier New', monospace;
+      text-align: center;
       padding: 20px;
     }
-
-    .main-content {
-      text-align: center;
-      animation: fadeIn 0.5s;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    .status-line {
-      font-size: 18px;
-      color: #ffff00;
-      margin-bottom: 10px;
-      min-height: 24px;
-    }
-
-    .train-type {
+    .main-fallback .status-line { font-size: 18px; }
+    .main-fallback .train-type {
       display: inline-block;
-      padding: 8px 12px;
-      margin-right: 15px;
+      padding: 6px 14px;
       border: 2px solid #fff;
       border-radius: 4px;
       font-weight: bold;
       font-size: 16px;
     }
+    .main-fallback .destination { font-size: 24px; font-weight: bold; }
+    .main-fallback .sta-name { font-size: 20px; }
 
-    .destination {
-      font-size: 24px;
-      font-weight: bold;
-      color: #ffff00;
-      margin: 15px 0;
-    }
-
-    .station-info {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 15px;
-      margin: 10px 0;
-      font-size: 20px;
-      color: #ffff00;
-    }
-
-    .station-number {
-      display: inline-block;
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      border: 3px solid #ffff00;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 14px;
-    }
-
-    /* =====================================
-       インフォメーションエリア（下部）
-       ===================================== */
-    .info-area {
-      flex: 0.8;
+    #infoAreaWrap {
+      flex: 1;
+      overflow: hidden;
       background: #111;
       border-top: 3px solid #ffff00;
-      padding: 20px;
-      overflow: hidden;
       position: relative;
     }
 
-    .info-slide {
+    #infoAreaWrap iframe {
       width: 100%;
       height: 100%;
-      display: none;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      animation: slideIn 0.5s;
+      border: none;
+      display: block;
     }
 
-    .info-slide.active {
+    /* インフォエリアにHTMLがない場合のフォールバック */
+    .info-fallback {
+      width: 100%;
+      height: 100%;
       display: flex;
-    }
-
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .info-title {
-      font-size: 18px;
-      font-weight: bold;
-      color: #ffff00;
-      margin-bottom: 15px;
-    }
-
-    .info-content {
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      color: #0f0;
+      font-family: 'Courier New', monospace;
       font-size: 14px;
-      color: #0f0;
       text-align: center;
-      line-height: 1.8;
+      gap: 8px;
     }
-
-    /* デバッグパネル */
-    .debug-panel {
-      position: fixed;
-      bottom: 10px;
-      right: 10px;
-      background: rgba(0,0,0,0.9);
-      border: 1px solid #0f0;
-      padding: 10px;
-      border-radius: 4px;
-      font-size: 11px;
-      color: #0f0;
-      max-width: 300px;
-      max-height: 200px;
-      overflow-y: auto;
-      z-index: 1000;
-    }
-
-    .debug-panel h4 {
-      color: #ffff00;
-      margin-bottom: 5px;
-    }
-
-    .debug-item {
-      margin: 3px 0;
-      word-break: break-word;
+    .slide-indicator {
+      position: absolute;
+      bottom: 6px;
+      right: 8px;
+      font-size: 10px;
+      color: rgba(255,255,100,0.5);
+      font-family: monospace;
+      pointer-events: none;
     }
   </style>
 </head>
 <body>
 
 <div class="lcd-container">
-  <!-- メインエリア -->
-  <div class="main-area">
-    <div class="main-content">
-      <div class="status-line" id="statusLine">接続待機中...</div>
-      <div style="margin: 20px 0;">
-        <div class="train-type" id="trainType">-- 種別 --</div>
-      </div>
-      <div class="destination" id="destination">-- 行き先 --</div>
-      <div class="station-info">
-        <div class="station-number" id="stationNumber">--</div>
-        <div id="stationName">-- 駅名 --</div>
-      </div>
+  <div id="mainAreaWrap">
+    <div class="main-fallback" id="mainFallback">
+      <div class="status-line" id="fbStatusLine">接続待機中...</div>
+      <div class="train-type" id="fbTrainType">-- 種別 --</div>
+      <div class="destination" id="fbDestination">-- 行き先 --</div>
+      <div class="sta-name" id="fbStaName">-- 駅名 --</div>
     </div>
   </div>
-
-  <!-- インフォメーションエリア -->
-  <div class="info-area">
-    <div class="info-slide active">
-      <div class="info-title">インフォメーション</div>
-      <div class="info-content" id="infoContent">
-        制御パネルから情報を受け取り待機中です。<br>
-        リアルタイムでスライドショーが表示されます。
-      </div>
+  <div id="infoAreaWrap">
+    <div class="info-fallback" id="infoFallback">
+      <div>インフォメーションエリア</div>
+      <div style="color:#555;font-size:11px">制御パネルのデザイン定義でHTMLを設定してください</div>
     </div>
-  </div>
-</div>
-
-<!-- デバッグパネル -->
-<div class="debug-panel">
-  <h4>Debug Info</h4>
-  <div id="debugInfo">
-    <div class="debug-item">接続待機中...</div>
+    <div class="slide-indicator" id="slideIndicator"></div>
   </div>
 </div>
 
 <script>
 // =====================================
-// グローバル状態
+// 状態管理
 // =====================================
-
-let currentOperation = null;
-let currentMasterData = null;
-let currentInfoIndex = 0;
-let infoSlideTimer = null;
-
-const languageNames = {
-  ja: '日本語',
-  en: '英語',
-  kana: 'ひらがな',
-  zh: '中国語',
-  ko: '韓国語'
-};
+let pendingPacket   = null;
+let slideTimer      = null;
+let currentSlideIdx = 0;
+let currentSlides   = [];
+let currentState    = null;
+let currentMainHtml = null;
 
 // =====================================
-// postMessage リスナー
+// postMessage 受信
 // =====================================
-
 window.addEventListener('message', (event) => {
   try {
-    const packet = event.data;
+    const pkt = event.data;
 
-    if (packet.operation && packet.masterData) {
-      currentOperation = packet.operation;
-      currentMasterData = packet.masterData;
+    // 親ウィンドウから初回データリクエスト応答
+    if (pkt.type === 'viewer-ready') return;
 
-      updateDisplay();
-      startInfoSlideshow();
-      debugLog('パケット受信 OK');
+    if (pkt.operation && pkt.masterData) {
+      pendingPacket = pkt;
+      updateDisplay(pkt);
     }
   } catch (err) {
-    debugLog('エラー: ' + err.message);
+    console.warn('viewer message error:', err.message);
   }
 });
 
 // =====================================
 // 表示更新
 // =====================================
+function updateDisplay(pkt) {
+  const op     = pkt.operation;
+  const master = pkt.masterData;
+  const design = master.design || {};
 
-function updateDisplay() {
-  if (!currentOperation || !currentMasterData) return;
+  // --- メインエリア ---
+  const mainHtml   = design.mainPage?.html || '';
+  const mainHeight = parseInt(design.mainPage?.height) || 400;
+  updateMainArea(mainHtml, mainHeight, pkt);
 
-  const {
-    currentState,
-    currentSystemId,
-    currentTrainTypeId,
-    currentStationIndex,
-    displayLanguages,
-    doorOpen
-  } = currentOperation;
+  // --- インフォエリア スライドショー ---
+  const newState  = op.currentState || 'running';
+  const newSlides = design.infoArea?.states?.[newState] || [];
+  const slidesKey = newState + '|' + JSON.stringify(newSlides.map(s => s.html));
 
-  // システムと駅情報を取得
-  const system = currentMasterData.train.systems.find(s => s.id === currentSystemId);
+  if (slidesKey !== currentState) {
+    currentState  = slidesKey;
+    currentSlides = newSlides;
+    startSlideshow(newSlides, pkt);
+  } else {
+    // 同じスライド構成 → 現在のiframeにデータだけ送信
+    sendToInfoFrame(pkt);
+  }
+
+  // フォールバック表示更新
+  updateFallback(op, master);
+}
+
+// =====================================
+// メインエリア
+// =====================================
+function updateMainArea(html, height, pkt) {
+  const wrap = document.getElementById('mainAreaWrap');
+  wrap.style.height = height + 'px';
+
+  if (!html) {
+    // フォールバック表示
+    showMainFallback(true);
+    return;
+  }
+
+  if (html !== currentMainHtml) {
+    currentMainHtml = html;
+    showMainFallback(false);
+    const frame = document.createElement('iframe');
+    frame.id = 'mainFrame';
+    frame.src = html;
+    // iframeがロードされたらデータ送信
+    frame.addEventListener('load', () => sendToFrame(frame, pkt), { once: false });
+    // 既存のiframeを差し替え
+    const old = document.getElementById('mainFrame');
+    if (old) old.remove();
+    wrap.appendChild(frame);
+  } else {
+    // 同じsrc → データだけ送信
+    const frame = document.getElementById('mainFrame');
+    if (frame) sendToFrame(frame, pkt);
+  }
+}
+
+function showMainFallback(show) {
+  const fb = document.getElementById('mainFallback');
+  const fr = document.getElementById('mainFrame');
+  if (fb) fb.style.display = show ? 'flex' : 'none';
+  if (fr) fr.style.display = show ? 'none' : 'block';
+}
+
+// =====================================
+// インフォエリア スライドショー
+// =====================================
+function startSlideshow(slides, pkt) {
+  if (slideTimer) { clearTimeout(slideTimer); slideTimer = null; }
+  currentSlideIdx = 0;
+
+  if (!slides || slides.length === 0) {
+    showInfoFallback(true);
+    return;
+  }
+  showInfoFallback(false);
+  showSlide(slides, pkt);
+}
+
+function showSlide(slides, pkt) {
+  if (!slides || slides.length === 0) return;
+  const slide = slides[currentSlideIdx % slides.length];
+
+  updateSlideIndicator(currentSlideIdx, slides.length, slide);
+
+  if (slide.html) {
+    const wrap  = document.getElementById('infoAreaWrap');
+    const oldFr = document.getElementById('infoFrame');
+
+    if (oldFr && oldFr.src.endsWith(slide.html.replace(/^\//, ''))) {
+      // 同じsrc → データだけ再送
+      sendToFrame(oldFr, pkt || pendingPacket);
+    } else {
+      const frame = document.createElement('iframe');
+      frame.id = 'infoFrame';
+      frame.addEventListener('load', () => sendToFrame(frame, pkt || pendingPacket), { once: false });
+      frame.src = slide.html;
+      if (oldFr) oldFr.remove();
+      else document.getElementById('infoFallback')?.remove();
+      wrap.insertBefore(frame, wrap.querySelector('.slide-indicator'));
+    }
+  }
+
+  const duration = (slide.duration || 5) * 1000;
+  slideTimer = setTimeout(() => {
+    currentSlideIdx = (currentSlideIdx + 1) % slides.length;
+    showSlide(slides, pendingPacket);
+  }, duration);
+}
+
+function sendToInfoFrame(pkt) {
+  const frame = document.getElementById('infoFrame');
+  if (frame) sendToFrame(frame, pkt);
+}
+
+function showInfoFallback(show) {
+  const wrap = document.getElementById('infoAreaWrap');
+  let fb = document.getElementById('infoFallback');
+  const fr = document.getElementById('infoFrame');
+  if (show) {
+    if (!fb) {
+      fb = document.createElement('div');
+      fb.id = 'infoFallback';
+      fb.className = 'info-fallback';
+      fb.innerHTML = '<div>インフォメーションエリア</div><div style="color:#555;font-size:11px">デザイン定義でスライドを設定してください</div>';
+      wrap.insertBefore(fb, wrap.querySelector('.slide-indicator'));
+    }
+    fb.style.display = 'flex';
+    if (fr) fr.style.display = 'none';
+  } else {
+    if (fb) fb.style.display = 'none';
+    if (fr) fr.style.display = 'block';
+  }
+}
+
+function updateSlideIndicator(idx, total, slide) {
+  const el = document.getElementById('slideIndicator');
+  if (!el) return;
+  el.textContent = total > 1 ? `${idx+1}/${total} · ${slide.duration||5}s` : '';
+}
+
+// =====================================
+// postMessage 転送
+// =====================================
+function sendToFrame(frame, pkt) {
+  if (!frame || !pkt) return;
+  try { frame.contentWindow.postMessage(pkt, '*'); } catch {}
+}
+
+// =====================================
+// フォールバック表示 (デザイン未設定時)
+// =====================================
+function updateFallback(op, master) {
+  const system = master.train?.systems?.find(s => s.id === op.currentSystemId);
   if (!system) return;
 
-  // 複数路線から駅インデックスを取得
   let allStations = [];
-  system.routes.forEach(route => {
-    const routeData = currentMasterData.routes[route.lineId];
-    if (routeData && routeData.stations) {
-      allStations.push(...routeData.stations);
-    }
+  (system.routes || []).forEach(r => {
+    const rd = master.routes?.[r.lineId];
+    if (rd?.stations) allStations.push(...rd.stations);
   });
 
-  const currentStation = allStations[currentStationIndex];
-  const trainType = currentMasterData.train.types.find(t => t.id === currentTrainTypeId);
+  const sta   = allStations[op.currentStationIndex] || {};
+  const type  = master.train?.types?.find(t => t.id === op.currentTrainTypeId) || {};
+  const langs = op.displayLanguages || ['ja'];
+  const lang  = langs[Math.floor(Date.now() / 3000) % langs.length];
 
-  if (!currentStation || !trainType) {
-    debugLog('駅または種別が見つかりません');
-    return;
-  }
-
-  // ====== メインエリア更新 ======
-
-  // ステータスラインの更新（言語順番に表示）
-  const currentLang = displayLanguages[Math.floor(Date.now() / 3000) % displayLanguages.length];
-  updateMainArea(currentState, currentLang, currentStation, trainType, system);
-
-  // 種別バッジの色設定
-  const trainTypeEl = document.getElementById('trainType');
-  trainTypeEl.style.backgroundColor = trainType.bg;
-  trainTypeEl.style.color = trainType.fg;
-  trainTypeEl.style.borderColor = trainType.fg;
-  trainTypeEl.textContent = trainType.name[currentLang] || trainType.name.ja;
-
-  // 行き先
-  const destination = document.getElementById('destination');
-  const lastRoute = system.routes[system.routes.length - 1];
-  destination.textContent = `${lastRoute.name}ゆき`;
-
-  // 駅情報
-  const stationNumber = document.getElementById('stationNumber');
-  stationNumber.textContent = currentStation.number;
-
-  const stationName = document.getElementById('stationName');
-  const statusPrefix = getStatusPrefix(currentState, currentLang);
-  stationName.textContent = `${statusPrefix}${currentStation.name[currentLang] || currentStation.name.ja}`;
-
-  debugLog(`
-    状態: ${currentState}
-    駅: ${currentStation.name.ja}
-    種別: ${trainType.name.ja}
-    言語: ${currentLang}
-  `);
-}
-
-function getStatusPrefix(state, lang) {
-  const prefixes = {
-    running: { ja: 'つぎは', en: 'Next', kana: 'つぎは', zh: '下一站', ko: '다음은' },
-    arriving: { ja: 'まもなく', en: 'Arriving at', kana: 'まもなく', zh: '即将到达', ko: '곧 도착' },
-    stopping: { ja: 'ただいま', en: 'Now stopping at', kana: 'ただいま', zh: '现在', ko: '현재' },
-    departing: { ja: 'ただいま', en: 'Now departing from', kana: 'ただいま', zh: '现在', ko: '현재' }
+  const stateLabels = {
+    running:   { ja:'つぎは', en:'Next', kana:'つぎは' },
+    arriving:  { ja:'まもなく', en:'Arriving', kana:'まもなく' },
+    stopping:  { ja:'ただいま', en:'Now at', kana:'ただいま' },
+    departing: { ja:'発車します', en:'Departing', kana:'はっしゃします' },
   };
+  const prefix = stateLabels[op.currentState]?.[lang] || '';
 
-  return (prefixes[state] && prefixes[state][lang]) ? prefixes[state][lang] + ' ' : '';
-}
+  setFbText('fbStatusLine', prefix + ' ' + (sta.name?.[lang] || sta.name?.ja || ''));
+  setFbText('fbTrainType',  type.name?.[lang] || type.name?.ja || '--');
+  const lastRoute = system.routes?.[system.routes.length - 1];
+  setFbText('fbDestination', lastRoute ? `${lastRoute.name||''}ゆき` : '--');
+  setFbText('fbStaName', (sta.name?.[lang] || sta.name?.ja || '--'));
 
-function updateMainArea(state, lang, station, trainType, system) {
-  const statusLine = document.getElementById('statusLine');
-  
-  const statusTexts = {
-    running: `つぎは ${station.name[lang] || station.name.ja} です`,
-    arriving: `まもなく ${station.name[lang] || station.name.ja} に到着します`,
-    stopping: `ただいま ${station.name[lang] || station.name.ja} に停車中です`,
-    departing: `${station.name[lang] || station.name.ja} から発車します`
-  };
-
-  statusLine.textContent = statusTexts[state] || statusTexts.running;
-}
-
-// =====================================
-// インフォメーションエリア スライドショー
-// =====================================
-
-function startInfoSlideshow() {
-  if (!currentOperation || !currentMasterData) return;
-
-  const infoConfig = currentMasterData.design.infoArea.states[currentOperation.currentState] || [];
-  
-  if (infoConfig.length === 0) {
-    debugLog('スライド情報なし');
-    return;
+  const typeEl = document.getElementById('fbTrainType');
+  if (typeEl && type.bg) {
+    typeEl.style.background = type.bg;
+    typeEl.style.color = type.fg || '#fff';
+    typeEl.style.borderColor = type.fg || '#fff';
   }
-
-  // 前のタイマーをクリア
-  if (infoSlideTimer) clearTimeout(infoSlideTimer);
-
-  currentInfoIndex = 0;
-  showNextSlide(infoConfig);
 }
 
-function showNextSlide(infoConfig) {
-  const slideInfo = infoConfig[currentInfoIndex % infoConfig.length];
-  
-  const infoContent = document.getElementById('infoContent');
-  infoContent.textContent = `【${slideInfo.type}】 ${slideInfo.duration}秒表示`;
-
-  // 次のスライドのタイマー設定
-  const duration = (slideInfo.duration || 5) * 1000;
-  currentInfoIndex++;
-
-  infoSlideTimer = setTimeout(() => {
-    showNextSlide(infoConfig);
-  }, duration);
-
-  debugLog(`スライド: ${slideInfo.type} (${slideInfo.duration}秒)`);
-}
-
-// =====================================
-// デバッグパネル
-// =====================================
-
-function debugLog(message) {
-  const debugInfo = document.getElementById('debugInfo');
-  const now = new Date().toLocaleTimeString('ja-JP');
-  
-  const item = document.createElement('div');
-  item.className = 'debug-item';
-  item.textContent = `[${now}] ${message}`;
-  
-  debugInfo.insertBefore(item, debugInfo.firstChild);
-
-  // 古いログを削除（最大20行まで）
-  while (debugInfo.children.length > 20) {
-    debugInfo.removeChild(debugInfo.lastChild);
-  }
+function setFbText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
 }
 
 // =====================================
 // 初期化
 // =====================================
-
 window.addEventListener('load', () => {
-  debugLog('LCD ビューア起動');
-  debugLog('control.html からの接続を待機中...');
-  
-  // 親ウィンドウにデータをリクエスト
   if (window.opener && !window.opener.closed) {
     window.opener.postMessage({ type: 'viewer-ready' }, '*');
   }
 });
 
-// ページを閉じる際
 window.addEventListener('beforeunload', () => {
-  if (infoSlideTimer) clearTimeout(infoSlideTimer);
+  if (slideTimer) clearTimeout(slideTimer);
 });
 </script>
-
 </body>
 </html>

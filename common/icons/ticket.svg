@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <rect width="48" height="48" rx="6" fill="#795548"/>
+  <rect x="6" y="16" width="36" height="16" rx="3" fill="white" opacity="0.9"/>
+  <circle cx="6" cy="24" r="5" fill="#795548"/>
+  <circle cx="42" cy="24" r="5" fill="#795548"/>
+  <text x="24" y="28" text-anchor="middle" font-size="9" font-weight="bold" fill="#795548" font-family="sans-serif">きっぷ売場</text>
+</svg>
